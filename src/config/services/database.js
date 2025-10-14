@@ -1,5 +1,5 @@
-import { db } from './firebase.js';
-import admin from '../config/firebase.js';
+import { db } from '../firebase.js';
+import admin from '../firebase.js';
 
 export class Database {
     constructor() {
