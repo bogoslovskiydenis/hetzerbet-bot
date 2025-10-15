@@ -1,0 +1,116 @@
+{
+  "welcome": {
+    "choose_language": "🌍 Bitte wählen Sie Ihre Sprache:",
+    "language_selected": "✅ Sprache auf Deutsch eingestellt!"
+  },
+  "subscription": {
+    "check_title": "📢 Abonnieren Sie unseren Kanal",
+    "check_text": "Um fortzufahren, abonnieren Sie bitte unseren offiziellen Hertzbet-Kanal.\n\n👉 Klicken Sie nach dem Abonnieren auf die Schaltfläche unten zur Überprüfung.",
+    "button_subscribe": "📢 Kanal abonnieren",
+    "button_check": "✅ Abonnement prüfen",
+    "not_subscribed": "❌ Sie haben den Kanal noch nicht abonniert.\n\nBitte abonnieren Sie und versuchen Sie es erneut.",
+    "success": "✅ Abonnement bestätigt! Willkommen bei Hertzbet!"
+  },
+  "phone": {
+    "request_title": "📱 Telefonnummer erforderlich",
+    "request_text": "Um fortzufahren, teilen Sie bitte Ihre Telefonnummer.\n\nDies ist für die Kontoverifizierung und Sicherheit erforderlich.",
+    "button_share": "📱 Telefonnummer teilen",
+    "button_skip": "⏭️ Überspringen",
+    "success": "✅ Telefonnummer gespeichert!",
+    "skipped": "⏭️ Telefonnummeranfrage übersprungen."
+  },
+  "main": {
+    "welcome_text": "🎰 Willkommen bei Hertzbet!\n\n✨ Tausende spannende Spiele\n💰 Großzügiger Willkommensbonus\n🎁 Cashback & Freispiele\n⚡️ Schnelle Auszahlungen\n🏆 Exklusives VIP-Programm\n💬 24/7 Kundensupport\n\n🎮 Jetzt spielen und groß gewinnen!",
+    "button_play_bot": "🎰 Im Bot spielen",
+    "button_play_web": "🌐 Auf Website spielen",
+    "button_share": "📣 Bot teilen"
+  },
+  "commands": {
+    "help_text": "ℹ️ Verfügbare Befehle:\n\n/start - Bot starten\n/language - Sprache ändern\n/unsubscribe - Benachrichtigungen deaktivieren\n",
+    "language_changed": "🌍 Sprache erfolgreich geändert!",
+    "unsubscribe_confirm": "🔕 Möchten Sie Benachrichtigungen wirklich deaktivieren?\n\nSie erhalten keine Updates mehr über Boni und Aktionen.",
+    "unsubscribe_success": "✅ Benachrichtigungen deaktiviert.\n\nSie können sie jederzeit mit /start wieder aktivieren",
+    "unsubscribe_cancelled": "👍 Sie erhalten weiterhin Benachrichtigungen.",
+    "button_yes": "✅ Ja",
+    "button_no": "❌ Nein"
+  },
+  "admin": {
+    "access_denied": "❌ Zugriff verweigert. Sie sind kein Administrator.",
+    "panel_title": "📊 ADMIN-PANEL",
+    "button_statistics": "📈 Statistiken",
+    "button_broadcast": "📢 Broadcast",
+    "button_export": "💾 Daten exportieren",
+    "button_settings": "⚙️ Einstellungen",
+    "button_back": "◀️ Zurück",
+    "statistics": {
+      "title": "📈 STATISTIKEN",
+      "total_users": "👥 Gesamtbenutzer: {count}",
+      "new_week": "📅 Neu diese Woche: {count}",
+      "new_month": "📆 Neu diesen Monat: {count}",
+      "last_month": "📋 Letzter Monat: {count}",
+      "by_language": "🌐 Nach Sprache:",
+      "german": "🇩🇪 Deutsch: {count}",
+      "english": "🇬🇧 Englisch: {count}",
+      "not_set": "❓ Nicht festgelegt: {count}"
+    },
+    "broadcast": {
+      "title": "📢 BROADCAST ERSTELLEN",
+      "choose_audience": "👥 Zielgruppe wählen:",
+      "all_users": "🌍 Alle Benutzer",
+      "german_only": "🇩🇪 Nur Deutsch",
+      "english_only": "🇬🇧 Nur Englisch",
+      "send_text": "📝 Senden Sie den Text der Nachricht, die Sie übertragen möchten:",
+      "send_media": "🖼️ Medien senden (Foto/Video/GIF) oder Überspringen klicken:",
+      "button_skip": "⏭️ Überspringen",
+      "add_buttons": "🔘 Schaltflächen hinzufügen? (max 8)\n\nSenden im Format:\nSchaltflächentext 1 | URL1\nSchaltflächentext 2 | URL2\n\nOder klicken Sie auf Überspringen:",
+      "preview": "👁️ VORSCHAU:\n\n{text}",
+      "confirm": "✅ Broadcast an {count} Benutzer senden?",
+      "button_send": "✅ Senden",
+      "button_cancel": "❌ Abbrechen",
+      "sending": "📤 Broadcast wird gesendet...\n\nFortschritt: {sent}/{total}",
+      "completed": "✅ Broadcast abgeschlossen!\n\n📤 Gesendet: {sent}\n❌ Fehlgeschlagen: {failed}\n👥 Gesamt: {total}",
+      "cancelled": "❌ Broadcast abgebrochen."
+    },
+    "export": {
+      "title": "💾 DATEN EXPORTIEREN",
+      "button_full_excel": "📊 Vollständige DB (Excel)",
+      "button_full_csv": "📄 Vollständige DB (CSV)",
+      "button_usernames": "👤 Benutzernamen",
+      "button_user_ids": "🆔 Benutzer-IDs",
+      "generating": "⏳ Datei wird generiert...",
+      "success": "✅ Datei erfolgreich generiert!",
+      "error": "❌ Fehler beim Generieren der Datei. Bitte versuchen Sie es erneut."
+    },
+    "settings": {
+      "title": "⚙️ EINSTELLUNGEN",
+      "notification_interval": "⏰ Benachrichtigungsintervall",
+      "phone_required": "📱 Telefonnummer erforderlich",
+      "welcome_text": "👋 Willkommenstext",
+      "current_interval": "Aktuelles Intervall: {hours} Stunden",
+      "set_interval": "Neues Intervall in Stunden eingeben (1-24):",
+      "interval_updated": "✅ Benachrichtigungsintervall auf {hours} Stunden aktualisiert",
+      "phone_status": "📱 Telefonnummer: {status}",
+      "phone_enabled": "✅ Aktiviert",
+      "phone_disabled": "❌ Deaktiviert",
+      "button_toggle_phone": "🔄 Telefonanfrage umschalten",
+      "phone_toggled": "✅ Telefonnummeranfrage {status}",
+      "enabled": "aktiviert",
+      "disabled": "deaktiviert"
+    }
+  },
+  "notifications": {
+    "promo_1": "🎰 Spielen und groß gewinnen bei Hertzbet!\n\n💰 Bis zu 500€ Willkommensbonus!\n🎁 Freispiele warten auf Sie!",
+    "promo_2": "🔥 Heiße Aktion!\n\n⚡️ Verdoppeln Sie heute Ihre Einzahlung!\n🎮 Tausende Spiele verfügbar!",
+    "promo_3": "🏆 VIP-Turnier beginnt bald!\n\n💎 Exklusive Preise\n🎯 Jetzt mitmachen und konkurrieren!"
+  },
+  "errors": {
+    "general": "❌ Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
+    "user_not_found": "❌ Benutzer nicht gefunden. Bitte verwenden Sie /start zur Registrierung.",
+    "invalid_format": "❌ Ungültiges Format. Bitte versuchen Sie es erneut.",
+    "channel_check_failed": "❌ Abonnementprüfung fehlgeschlagen. Bitte versuchen Sie es erneut."
+  },
+  "buttons": {
+    "german": "🇩🇪 Deutsch",
+    "english": "🇬🇧 English"
+  }
+}

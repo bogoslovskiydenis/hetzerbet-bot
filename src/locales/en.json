@@ -1,0 +1,116 @@
+{
+  "welcome": {
+    "choose_language": "🌍 Please choose your language:",
+    "language_selected": "✅ Language set to English!"
+  },
+  "subscription": {
+    "check_title": "📢 Subscribe to our channel",
+    "check_text": "To continue, please subscribe to our official Hertzbet channel.\n\n👉 After subscribing, click the button below to verify.",
+    "button_subscribe": "📢 Subscribe to Channel",
+    "button_check": "✅ Check Subscription",
+    "not_subscribed": "❌ You are not subscribed to the channel yet.\n\nPlease subscribe and try again.",
+    "success": "✅ Subscription verified! Welcome to Hertzbet!"
+  },
+  "phone": {
+    "request_title": "📱 Phone Number Required",
+    "request_text": "To continue, please share your phone number.\n\nThis is required for account verification and security.",
+    "button_share": "📱 Share Phone Number",
+    "button_skip": "⏭️ Skip",
+    "success": "✅ Phone number saved!",
+    "skipped": "⏭️ Phone number request skipped."
+  },
+  "main": {
+    "welcome_text": "🎰 Welcome to Hertzbet!\n\n✨ Thousands of exciting games\n💰 Generous welcome bonus\n🎁 Cashback & Free Spins\n⚡️ Fast withdrawals\n🏆 Exclusive VIP Program\n💬 24/7 Customer Support\n\n🎮 Start playing now and win big!",
+    "button_play_bot": "🎰 Play in Bot",
+    "button_play_web": "🌐 Play on Website",
+    "button_share": "📣 Share Bot"
+  },
+  "commands": {
+    "help_text": "ℹ️ Available Commands:\n\n/start - Start the bot\n/language - Change language\n/unsubscribe - Disable notifications\n",
+    "language_changed": "🌍 Language changed successfully!",
+    "unsubscribe_confirm": "🔕 Are you sure you want to disable notifications?\n\nYou will no longer receive updates about bonuses and promotions.",
+    "unsubscribe_success": "✅ Notifications disabled.\n\nYou can enable them again anytime with /start",
+    "unsubscribe_cancelled": "👍 You will continue receiving notifications.",
+    "button_yes": "✅ Yes",
+    "button_no": "❌ No"
+  },
+  "admin": {
+    "access_denied": "❌ Access denied. You are not an administrator.",
+    "panel_title": "📊 ADMIN PANEL",
+    "button_statistics": "📈 Statistics",
+    "button_broadcast": "📢 Broadcast",
+    "button_export": "💾 Export Data",
+    "button_settings": "⚙️ Settings",
+    "button_back": "◀️ Back",
+    "statistics": {
+      "title": "📈 STATISTICS",
+      "total_users": "👥 Total Users: {count}",
+      "new_week": "📅 New This Week: {count}",
+      "new_month": "📆 New This Month: {count}",
+      "last_month": "📋 Last Month: {count}",
+      "by_language": "🌐 By Language:",
+      "german": "🇩🇪 German: {count}",
+      "english": "🇬🇧 English: {count}",
+      "not_set": "❓ Not Set: {count}"
+    },
+    "broadcast": {
+      "title": "📢 CREATE BROADCAST",
+      "choose_audience": "👥 Choose target audience:",
+      "all_users": "🌍 All Users",
+      "german_only": "🇩🇪 German Only",
+      "english_only": "🇬🇧 English Only",
+      "send_text": "📝 Send the message text you want to broadcast:",
+      "send_media": "🖼️ Send media (photo/video/gif) or click Skip:",
+      "button_skip": "⏭️ Skip",
+      "add_buttons": "🔘 Add buttons? (max 8)\n\nSend in format:\nButton Text 1 | URL1\nButton Text 2 | URL2\n\nOr click Skip:",
+      "preview": "👁️ PREVIEW:\n\n{text}",
+      "confirm": "✅ Send broadcast to {count} users?",
+      "button_send": "✅ Send",
+      "button_cancel": "❌ Cancel",
+      "sending": "📤 Sending broadcast...\n\nProgress: {sent}/{total}",
+      "completed": "✅ Broadcast completed!\n\n📤 Sent: {sent}\n❌ Failed: {failed}\n👥 Total: {total}",
+      "cancelled": "❌ Broadcast cancelled."
+    },
+    "export": {
+      "title": "💾 EXPORT DATA",
+      "button_full_excel": "📊 Full DB (Excel)",
+      "button_full_csv": "📄 Full DB (CSV)",
+      "button_usernames": "👤 Usernames",
+      "button_user_ids": "🆔 User IDs",
+      "generating": "⏳ Generating file...",
+      "success": "✅ File generated successfully!",
+      "error": "❌ Error generating file. Please try again."
+    },
+    "settings": {
+      "title": "⚙️ SETTINGS",
+      "notification_interval": "⏰ Notification Interval",
+      "phone_required": "📱 Phone Number Required",
+      "welcome_text": "👋 Welcome Text",
+      "current_interval": "Current interval: {hours} hours",
+      "set_interval": "Enter new interval in hours (1-24):",
+      "interval_updated": "✅ Notification interval updated to {hours} hours",
+      "phone_status": "📱 Phone Number: {status}",
+      "phone_enabled": "✅ Enabled",
+      "phone_disabled": "❌ Disabled",
+      "button_toggle_phone": "🔄 Toggle Phone Request",
+      "phone_toggled": "✅ Phone number request {status}",
+      "enabled": "enabled",
+      "disabled": "disabled"
+    }
+  },
+  "notifications": {
+    "promo_1": "🎰 Play and win big at Hertzbet!\n\n💰 Get up to 500€ welcome bonus!\n🎁 Free spins waiting for you!",
+    "promo_2": "🔥 Hot promotion alert!\n\n⚡️ Double your deposit today!\n🎮 Thousands of games available!",
+    "promo_3": "🏆 VIP Tournament starting soon!\n\n💎 Exclusive prizes\n🎯 Join now and compete!"
+  },
+  "errors": {
+    "general": "❌ An error occurred. Please try again later.",
+    "user_not_found": "❌ User not found. Please use /start to register.",
+    "invalid_format": "❌ Invalid format. Please try again.",
+    "channel_check_failed": "❌ Failed to check subscription. Please try again."
+  },
+  "buttons": {
+    "german": "🇩🇪 Deutsch",
+    "english": "🇬🇧 English"
+  }
+}
