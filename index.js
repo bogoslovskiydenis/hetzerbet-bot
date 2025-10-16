@@ -1,4 +1,4 @@
-import { Telegraf } from 'telegraf';
+import { Telegraf, Markup } from 'telegraf';
 import dotenv from 'dotenv';
 import './src/config/firebase.js';
 import { database } from './src/config/services/database.js';
@@ -8,34 +8,62 @@ import {
     getLanguageKeyboard
 } from './src/utils/keyboards.js';
 
-// Импорт админ-обработчиков
+// Импорт обработчиков
 import { registerAdminHandlers } from './src/handlers/admin/index.js';
 import { registerStatisticsHandlers } from './src/handlers/admin/statistics.js';
 import { registerBroadcastHandlers } from './src/handlers/admin/broadcast.js';
 import { registerExportHandlers } from './src/handlers/admin/export.js';
 import { registerSettingsHandlers } from './src/handlers/admin/settings.js';
+import {
+    shouldRequestPhone,
+    requestPhoneNumber,
+    handlePhoneContact,
+    handlePhoneSkip,
+    isAwaitingPhone
+} from './src/handlers/phone.js';
 
 dotenv.config();
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
-
-// ========== ТЕСТИРОВАНИЕ FIREBASE ==========
-(async () => {
-    console.log('\n🔥 Testing Firebase connection...');
-    const testResult = await database.testConnection();
-    if (testResult) {
-        console.log('✅ Firebase is ready to use!\n');
-    } else {
-        console.log('❌ Firebase connection failed. Check your credentials.\n');
-        process.exit(1);
-    }
-})();
 
 // ========== HELPER FUNCTIONS ==========
 
 async function getUserLanguage(userId) {
     const user = await database.getUser(userId);
     return user?.language || 'en';
+}
+
+// Вспомогательная функция для отправки приветственного сообщения
+async function sendWelcomeMessage(ctx, language) {
+    await database.updateUser(ctx.from.id, {
+        onboarding_step: 'completed',
+        onboarding_completed: true
+    });
+
+    const welcomeImageUrl = "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800";
+
+    if (welcomeImageUrl) {
+        try {
+            await ctx.replyWithPhoto(
+                welcomeImageUrl,
+                {
+                    caption: t('main.welcome_text', language),
+                    ...getMainKeyboard(language)
+                }
+            );
+        } catch (error) {
+            console.error('❌ Error sending welcome image:', error);
+            await ctx.reply(
+                t('main.welcome_text', language),
+                getMainKeyboard(language)
+            );
+        }
+    } else {
+        await ctx.reply(
+            t('main.welcome_text', language),
+            getMainKeyboard(language)
+        );
+    }
 }
 
 // ========== TELEGRAM BOT ==========
@@ -89,20 +117,28 @@ bot.action(/language_(de|en)/, async (ctx) => {
 
     await database.updateUser(userId, {
         language,
-        onboarding_step: 'channel_subscription'
+        onboarding_step: 'language_selected'
     });
 
     await ctx.answerCbQuery();
     await ctx.editMessageText(t('welcome.language_selected', language));
 
-    // TODO: Здесь будет логика проверки подписки
-    // Пока показываем основное меню
-    setTimeout(async () => {
-        await ctx.reply(
-            t('main.welcome_text', language),
-            getMainKeyboard(language)
-        );
-    }, 1000);
+    // Проверяем, нужно ли запрашивать номер телефона
+    const phoneRequired = await shouldRequestPhone();
+
+    if (phoneRequired) {
+        // Если включен запрос телефона - показываем его
+        console.log(`📱 Phone request is enabled, showing phone keyboard`);
+        setTimeout(async () => {
+            await requestPhoneNumber(ctx, language);
+        }, 1000);
+    } else {
+        // Если запрос телефона выключен - сразу показываем приветствие
+        console.log(`⏭️ Phone request is disabled, showing welcome message`);
+        setTimeout(async () => {
+            await sendWelcomeMessage(ctx, language);
+        }, 1000);
+    }
 });
 
 // Команда /language - смена языка
@@ -166,11 +202,28 @@ registerBroadcastHandlers(bot);
 registerExportHandlers(bot);
 registerSettingsHandlers(bot);
 
-// ========== ЭХО-ФУНКЦИЯ ==========
+// ========== ОБРАБОТКА КОНТАКТОВ И ТЕКСТА ==========
+
+// Обработка контакта (номер телефона)
+bot.on('contact', async (ctx) => {
+    await handlePhoneContact(ctx);
+});
+
 // Обработка всех остальных текстовых сообщений
 bot.on('text', async (ctx) => {
     const userId = ctx.from.id;
     const lang = await getUserLanguage(userId);
+
+    // Проверяем, ждет ли бот номер телефона
+    const awaitingPhone = await isAwaitingPhone(userId);
+
+    if (awaitingPhone) {
+        // Проверяем, не нажал ли пользователь "Пропустить"
+        const skipped = await handlePhoneSkip(ctx);
+        if (skipped) {
+            return; // Если пропустил - выходим
+        }
+    }
 
     // Обновляем последнюю активность
     await database.updateUser(userId, {});
@@ -205,6 +258,7 @@ bot.launch({
     console.log('\n📊 Admin Panel: /admin');
     console.log('🌐 Change Language: /language');
     console.log('❓ Help: /help');
+    console.log('📱 Phone Request: configurable in /admin');
 });
 
 // Graceful shutdown
@@ -216,63 +270,4 @@ process.once('SIGINT', () => {
 process.once('SIGTERM', () => {
     console.log('\n⚠️ SIGTERM received, stopping bot...');
     bot.stop('SIGTERM');
-});
-
-// Специальная команда для первичной инициализации админа
-// ВАЖНО: Удалите эту команду после настройки или добавьте дополнительную защиту!
-bot.command('makeadmin', async (ctx) => {
-    const userId = ctx.from.id;
-    const username = ctx.from.username;
-
-    console.log(`\n🔐 Make admin request:`);
-    console.log(`   User ID: ${userId}`);
-    console.log(`   Username: @${username}`);
-
-    // ВАЖНО: Укажите здесь ID того, кто может стать первым админом
-    const ALLOWED_INIT_IDS = [5230934145, 1099861998];
-
-    if (!ALLOWED_INIT_IDS.includes(userId)) {
-        console.log(`   ❌ User ${userId} is not in allowed list`);
-        await ctx.reply('❌ Access denied. This command is restricted.');
-        return;
-    }
-
-    try {
-        // Получаем текущие настройки
-        let settings = await database.getBotSettings();
-
-        if (!settings) {
-            console.log('   Creating default settings...');
-            await database.createDefaultSettings();
-            settings = await database.getBotSettings();
-        }
-
-        // Добавляем пользователя в админы
-        const currentAdmins = settings.admin_ids || [];
-
-        if (currentAdmins.includes(userId)) {
-            await ctx.reply('✅ You are already an admin!');
-            console.log(`   ℹ️  User ${userId} is already admin`);
-            return;
-        }
-
-        currentAdmins.push(userId);
-
-        await database.updateSettings({
-            admin_ids: currentAdmins
-        });
-
-        await ctx.reply(
-            '✅ Admin access granted!\n\n' +
-            'You can now use /admin command.\n\n' +
-            '⚠️ For security, consider removing /makeadmin command from the code.'
-        );
-
-        console.log(`   ✅ User ${userId} (@${username}) added as admin`);
-        console.log(`   Current admins: ${currentAdmins.join(', ')}`);
-
-    } catch (error) {
-        console.error('   ❌ Error adding admin:', error);
-        await ctx.reply('❌ Error occurred. Check the logs.');
-    }
 });
