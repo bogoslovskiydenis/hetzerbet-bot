@@ -192,16 +192,7 @@ export class Database {
         }
     }
 
-    // Проверить, является ли пользователь админом
-    async isAdmin(userId) {
-        try {
-            const settings = await this.getBotSettings();
-            return settings?.admin_ids?.includes(userId) || false;
-        } catch (error) {
-            console.error('❌ Error checking admin:', error);
-            return false;
-        }
-    }
+
 
     // Добавить админа
     async addAdmin(userId) {
@@ -472,6 +463,21 @@ export class Database {
             return true;
         } catch (error) {
             console.error('❌ Firebase connection test: FAILED', error);
+            return false;
+        }
+    }
+
+    // В методе isAdmin добавьте логирование:
+    async isAdmin(userId) {
+        try {
+            const settings = await this.getBotSettings();
+            console.log('🔍 DEBUG isAdmin:');
+            console.log('   Checking userId:', userId);
+            console.log('   admin_ids from DB:', settings?.admin_ids);
+            console.log('   Includes?', settings?.admin_ids?.includes(userId));
+            return settings?.admin_ids?.includes(userId) || false;
+        } catch (error) {
+            console.error('❌ Error checking admin:', error);
             return false;
         }
     }
