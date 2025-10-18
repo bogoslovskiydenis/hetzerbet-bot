@@ -1,6 +1,6 @@
 {
   "welcome": {
-    "choose_language": "🌍 Bitte wählen Sie Ihre Sprache:",
+    "choose_language": "🌐 Bitte wählen Sie Ihre Sprache:",
     "language_selected": "✅ Sprache auf Deutsch eingestellt!"
   },
   "subscription": {
@@ -13,11 +13,11 @@
   },
   "phone": {
     "request_title": "📱 Telefonnummer erforderlich",
-    "request_text": "Um fortzufahren, teilen Sie bitte Ihre Telefonnummer.\n\nDies ist für die Kontoverifizierung und Sicherheit erforderlich.",
+    "request_text": "Um fortzufahren, teilen Sie bitte Ihre Telefonnummer.\n\n",
     "button_share": "📱 Telefonnummer teilen",
-    "button_skip": "⏭️ Überspringen",
+    "button_skip": "⭐️ Überspringen",
     "success": "✅ Telefonnummer gespeichert!",
-    "skipped": "⏭️ Telefonnummeranfrage übersprungen."
+    "skipped": "⭐️ Telefonnummeranfrage übersprungen."
   },
   "main": {
     "welcome_text": "🎰 Willkommen bei Hertzbet!\n\n✨ Tausende spannende Spiele\n💰 Großzügiger Willkommensbonus\n🎁 Cashback & Freispiele\n⚡️ Schnelle Auszahlungen\n🏆 Exklusives VIP-Programm\n💬 24/7 Kundensupport\n\n🎮 Jetzt spielen und groß gewinnen!",
@@ -27,7 +27,7 @@
   },
   "commands": {
     "help_text": "ℹ️ Verfügbare Befehle:\n\n/start - Bot starten\n/language - Sprache ändern\n/unsubscribe - Benachrichtigungen deaktivieren\n",
-    "language_changed": "🌍 Sprache erfolgreich geändert!",
+    "language_changed": "🌐 Sprache erfolgreich geändert!",
     "unsubscribe_confirm": "🔕 Möchten Sie Benachrichtigungen wirklich deaktivieren?\n\nSie erhalten keine Updates mehr über Boni und Aktionen.",
     "unsubscribe_success": "✅ Benachrichtigungen deaktiviert.\n\nSie können sie jederzeit mit /start wieder aktivieren",
     "unsubscribe_cancelled": "👍 Sie erhalten weiterhin Benachrichtigungen.",
@@ -56,20 +56,26 @@
     "broadcast": {
       "title": "📢 BROADCAST ERSTELLEN",
       "choose_audience": "👥 Zielgruppe wählen:",
-      "all_users": "🌍 Alle Benutzer",
+      "all_users": "🌐 Alle Benutzer",
       "german_only": "🇩🇪 Nur Deutsch",
       "english_only": "🇬🇧 Nur Englisch",
       "send_text": "📝 Senden Sie den Text der Nachricht, die Sie übertragen möchten:",
       "send_media": "🖼️ Medien senden (Foto/Video/GIF) oder Überspringen klicken:",
-      "button_skip": "⏭️ Überspringen",
+      "button_skip": "⭐️ Überspringen",
       "add_buttons": "🔘 Schaltflächen hinzufügen? (max 8)\n\nSenden im Format:\nSchaltflächentext 1 | URL1\nSchaltflächentext 2 | URL2\n\nOder klicken Sie auf Überspringen:",
       "preview": "👁️ VORSCHAU:\n\n{text}",
+      "target_count": "Zielgruppe: {count} Benutzer",
+      "buttons_count": "Schaltflächen: {count}",
       "confirm": "✅ Broadcast an {count} Benutzer senden?",
       "button_send": "✅ Senden",
       "button_cancel": "❌ Abbrechen",
+      "button_cancel_hint": "Geben Sie /cancel ein, um abzubrechen",
       "sending": "📤 Broadcast wird gesendet...\n\nFortschritt: {sent}/{total}",
       "completed": "✅ Broadcast abgeschlossen!\n\n📤 Gesendet: {sent}\n❌ Fehlgeschlagen: {failed}\n👥 Gesamt: {total}",
-      "cancelled": "❌ Broadcast abgebrochen."
+      "cancelled": "❌ Broadcast abgebrochen.",
+      "invalid_media": "Ungültiger Medientyp. Bitte senden Sie Foto, Video oder GIF.",
+      "invalid_buttons": "Ungültiges Schaltflächenformat. Verwenden Sie: Text | URL",
+      "too_many_buttons": "Zu viele Schaltflächen! Maximal 8 erlaubt."
     },
     "export": {
       "title": "💾 DATEN EXPORTIEREN",

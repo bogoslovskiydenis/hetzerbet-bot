@@ -11,7 +11,11 @@ import {
 // Импорт обработчиков
 import { registerAdminHandlers } from './src/handlers/admin/index.js';
 import { registerStatisticsHandlers } from './src/handlers/admin/statistics.js';
-import { registerBroadcastHandlers } from './src/handlers/admin/broadcast.js';
+import {
+    registerBroadcastHandlers,
+    handleBroadcastText,
+    handleBroadcastButtons
+} from './src/handlers/admin/broadcast.js';
 import { registerExportHandlers } from './src/handlers/admin/export.js';
 import { registerSettingsHandlers } from './src/handlers/admin/settings.js';
 import {
@@ -21,6 +25,10 @@ import {
     handlePhoneSkip,
     isAwaitingPhone
 } from './src/handlers/phone.js';
+
+// ⭐ ДОБАВЛЕНО: Импорт планировщика уведомлений
+import { startNotificationScheduler } from './src/services/notifications.js';
+import { broadcastStates } from './src/utils/broadcastStates.js';
 
 dotenv.config();
 
@@ -213,6 +221,31 @@ bot.on('contact', async (ctx) => {
 bot.on('text', async (ctx) => {
     const userId = ctx.from.id;
     const lang = await getUserLanguage(userId);
+    const text = ctx.message.text;
+
+    // Проверяем, является ли пользователь админом
+    const isAdmin = await database.isAdmin(userId);
+
+    // Если админ в процессе создания рассылки
+    if (isAdmin && broadcastStates.isActive(userId)) {
+        // Проверка на команду отмены
+        if (text === '/cancel') {
+            await handleBroadcastText(ctx);
+            return;
+        }
+
+        // Если ожидается текст рассылки
+        if (broadcastStates.isAwaitingText(userId)) {
+            await handleBroadcastText(ctx);
+            return;
+        }
+
+        // Если ожидаются кнопки (текст содержит "|")
+        if (broadcastStates.isAwaitingButtons(userId)) {
+            await handleBroadcastButtons(ctx);
+            return;
+        }
+    }
 
     // Проверяем, ждет ли бот номер телефона
     const awaitingPhone = await isAwaitingPhone(userId);
@@ -221,7 +254,7 @@ bot.on('text', async (ctx) => {
         // Проверяем, не нажал ли пользователь "Пропустить"
         const skipped = await handlePhoneSkip(ctx);
         if (skipped) {
-            return; // Если пропустил - выходим
+            return;
         }
     }
 
@@ -252,14 +285,29 @@ console.log('🤖 Starting Telegram bot...');
 
 bot.launch({
     dropPendingUpdates: true
-}).then(() => {
-    console.log('✅ Bot started successfully!');
-    console.log('🔗 Bot username: @' + bot.botInfo.username);
-    console.log('\n📊 Admin Panel: /admin');
-    console.log('🌐 Change Language: /language');
-    console.log('❓ Help: /help');
-    console.log('📱 Phone Request: configurable in /admin');
 });
+
+// Ждём небольшую задержку и запускаем планировщик
+setTimeout(() => {
+    if (bot.botInfo) {
+        console.log('✅ Bot started successfully!');
+        console.log('🔗 Bot username: @' + bot.botInfo.username);
+        console.log('\n📊 Admin Panel: /admin');
+        console.log('🌐 Change Language: /language');
+        console.log('❓ Help: /help');
+        console.log('📱 Phone Request: configurable in /admin');
+
+        console.log('🔧 Starting notification scheduler...');
+        startNotificationScheduler(bot);
+    } else {
+        console.log('⚠️ Bot not ready yet, retrying...');
+        setTimeout(() => {
+            console.log('✅ Bot started successfully!');
+            console.log('🔗 Bot username: @' + bot.botInfo.username);
+            startNotificationScheduler(bot);
+        }, 2000);
+    }
+}, 2000);
 
 // Graceful shutdown
 process.once('SIGINT', () => {

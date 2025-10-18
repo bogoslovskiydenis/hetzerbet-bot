@@ -13,7 +13,7 @@
   },
   "phone": {
     "request_title": "📱 Phone Number Required",
-    "request_text": "To continue, please share your phone number.\n\nThis is required for account verification and security.",
+    "request_text": "To continue, please share your phone number.\n\n",
     "button_share": "📱 Share Phone Number",
     "button_skip": "⏭️ Skip",
     "success": "✅ Phone number saved!",
@@ -56,20 +56,26 @@
     "broadcast": {
       "title": "📢 CREATE BROADCAST",
       "choose_audience": "👥 Choose target audience:",
-      "all_users": "🌍 All Users",
+      "all_users": "🌐 All Users",
       "german_only": "🇩🇪 German Only",
       "english_only": "🇬🇧 English Only",
       "send_text": "📝 Send the message text you want to broadcast:",
       "send_media": "🖼️ Send media (photo/video/gif) or click Skip:",
-      "button_skip": "⏭️ Skip",
+      "button_skip": "⭐️ Skip",
       "add_buttons": "🔘 Add buttons? (max 8)\n\nSend in format:\nButton Text 1 | URL1\nButton Text 2 | URL2\n\nOr click Skip:",
       "preview": "👁️ PREVIEW:\n\n{text}",
+      "target_count": "Target audience: {count} users",
+      "buttons_count": "Buttons: {count}",
       "confirm": "✅ Send broadcast to {count} users?",
       "button_send": "✅ Send",
       "button_cancel": "❌ Cancel",
+      "button_cancel_hint": "Type /cancel to abort",
       "sending": "📤 Sending broadcast...\n\nProgress: {sent}/{total}",
       "completed": "✅ Broadcast completed!\n\n📤 Sent: {sent}\n❌ Failed: {failed}\n👥 Total: {total}",
-      "cancelled": "❌ Broadcast cancelled."
+      "cancelled": "❌ Broadcast cancelled.",
+      "invalid_media": "Invalid media type. Please send photo, video or GIF.",
+      "invalid_buttons": "Invalid button format. Use: Text | URL",
+      "too_many_buttons": "Too many buttons! Maximum 8 allowed."
     },
     "export": {
       "title": "💾 EXPORT DATA",
