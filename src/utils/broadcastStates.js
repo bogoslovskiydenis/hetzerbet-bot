@@ -18,7 +18,9 @@ class BroadcastStateManager {
             media: null,
             mediaType: null,
             buttons: [],
-            step: 'text' // text, media, buttons, preview
+            scheduled: false,
+            scheduledTime: null,
+            step: 'text' // text, media, buttons, scheduling, awaiting_datetime, preview
         });
         console.log(`📝 Initialized broadcast state for user ${userId}`);
     }
@@ -85,6 +87,14 @@ class BroadcastStateManager {
     isAwaitingButtons(userId) {
         const state = this.states.get(userId);
         return state && state.step === 'buttons' && state.text !== null && state.buttons.length === 0;
+    }
+
+    /**
+     * Проверить, ожидается ли ввод даты/времени
+     */
+    isAwaitingDateTime(userId) {
+        const state = this.states.get(userId);
+        return state && state.step === 'awaiting_datetime';
     }
 
     /**

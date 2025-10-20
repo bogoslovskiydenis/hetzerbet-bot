@@ -54,11 +54,11 @@ function getRandomPromo(language) {
  */
 async function canSendNotification(user, settings) {
     // Проверка 1: Включены ли уведомления у пользователя
-    if (!user.notifications_enabled) {
-        return false;
-    }
-
-    // Проверка 2: Тихие часы (quiet hours) - ОТКЛЮЧЕНО ДЛЯ ТЕСТА
+    // if (!user.notifications_enabled) {
+    //     return false;
+    // }
+    //
+    // // Проверка 2: Тихие часы (quiet hours) - ОТКЛЮЧЕНО ДЛЯ ТЕСТА
     // if (settings.notification_schedule?.enabled) {
     //     const now = new Date();
     //     const currentHour = now.getHours();

@@ -105,7 +105,9 @@ export class Database {
     // Получить пользователей с включенными уведомлениями
     async getUsersWithNotifications(language = null) {
         try {
-            let query = this.usersCollection.where('notifications_enabled', '==', true);
+            // Временно для теста - возвращаем ВСЕХ пользователей
+            let query = this.usersCollection;
+            // let query = this.usersCollection.where('notifications_enabled', '==', true);
 
             if (language) {
                 query = query.where('language', '==', language);
@@ -116,7 +118,7 @@ export class Database {
             snapshot.forEach(doc => {
                 users.push(doc.data());
             });
-            console.log(`✅ Retrieved ${users.length} users with notifications enabled`);
+            console.log(`✅ Retrieved ${users.length} users (TEST MODE - all users)`);
             return users;
         } catch (error) {
             console.error('❌ Error getting users with notifications:', error);
@@ -479,6 +481,114 @@ export class Database {
         } catch (error) {
             console.error('❌ Error checking admin:', error);
             return false;
+        }
+    }
+
+
+    // ========== SCHEDULED BROADCASTS ==========
+
+    /**
+     * Получить все запланированные рассылки (статус 'scheduled')
+     */
+    async getScheduledBroadcasts() {
+        try {
+            const snapshot = await this.broadcastsCollection
+                .where('status', '==', 'scheduled')
+                .orderBy('scheduled_time', 'asc')
+                .get();
+
+            const broadcasts = [];
+            snapshot.forEach(doc => {
+                broadcasts.push({ id: doc.id, ...doc.data() });
+            });
+
+            console.log(`✅ Retrieved ${broadcasts.length} scheduled broadcasts`);
+            return broadcasts;
+        } catch (error) {
+            console.error('❌ Error getting scheduled broadcasts:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Получить все запланированные рассылки для админа (для просмотра)
+     */
+    async getAllScheduledBroadcasts() {
+        try {
+            const snapshot = await this.broadcastsCollection
+                .where('status', '==', 'scheduled')
+                .orderBy('scheduled_time', 'asc')
+                .get();
+
+            const broadcasts = [];
+            snapshot.forEach(doc => {
+                broadcasts.push({ id: doc.id, ...doc.data() });
+            });
+
+            return broadcasts;
+        } catch (error) {
+            console.error('❌ Error getting all scheduled broadcasts:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Отменить (удалить) запланированную рассылку
+     */
+    async cancelScheduledBroadcast(broadcastId) {
+        try {
+            const broadcast = await this.getBroadcast(broadcastId);
+
+            if (!broadcast) {
+                console.log(`⚠️ Broadcast ${broadcastId} not found`);
+                return false;
+            }
+
+            if (broadcast.status !== 'scheduled') {
+                console.log(`⚠️ Broadcast ${broadcastId} is not scheduled (status: ${broadcast.status})`);
+                return false;
+            }
+
+            // Обновляем статус на cancelled
+            await this.broadcastsCollection.doc(broadcastId).update({
+                status: 'cancelled',
+                cancelled_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            console.log(`✅ Broadcast ${broadcastId} cancelled`);
+            return true;
+        } catch (error) {
+            console.error('❌ Error cancelling broadcast:', error);
+            return false;
+        }
+    }
+
+    async createScheduledBroadcast(broadcastData) {
+        try {
+            const broadcastRef = await this.broadcastsCollection.add({
+                text: broadcastData.text,
+                media_url: broadcastData.media_url || null,
+                media_type: broadcastData.media_type || null,
+                buttons: broadcastData.buttons || [],
+                target_language: broadcastData.target_language || 'all',
+                status: 'scheduled',
+                is_scheduled: true,
+                scheduled_time: broadcastData.scheduled_time,
+                sent_count: 0,
+                failed_count: 0,
+                total_count: 0,
+                created_by: broadcastData.admin_id,
+                created_at: admin.firestore.FieldValue.serverTimestamp(),
+                started_at: null,
+                completed_at: null,
+                cancelled_at: null
+            });
+
+            console.log(`✅ Scheduled broadcast ${broadcastRef.id} created`);
+            return broadcastRef.id;
+        } catch (error) {
+            console.error('❌ Error creating scheduled broadcast:', error);
+            return null;
         }
     }
 }

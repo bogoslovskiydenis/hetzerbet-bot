@@ -14,7 +14,8 @@ import { registerStatisticsHandlers } from './src/handlers/admin/statistics.js';
 import {
     registerBroadcastHandlers,
     handleBroadcastText,
-    handleBroadcastButtons
+    handleBroadcastButtons,
+    handleDateTimeInput
 } from './src/handlers/admin/broadcast.js';
 import { registerExportHandlers } from './src/handlers/admin/export.js';
 import { registerSettingsHandlers } from './src/handlers/admin/settings.js';
@@ -26,8 +27,9 @@ import {
     isAwaitingPhone
 } from './src/handlers/phone.js';
 
-// ⭐ ДОБАВЛЕНО: Импорт планировщика уведомлений
+// ⭐ ДОБАВЛЕНО: Импорт планировщиков
 import { startNotificationScheduler } from './src/services/notifications.js';
+import { startBroadcastScheduler } from './src/services/broadcastScheduler.js';
 import { broadcastStates } from './src/utils/broadcastStates.js';
 
 dotenv.config();
@@ -87,7 +89,7 @@ bot.command('start', async (ctx) => {
     let user = await database.getUser(userId);
 
     if (!user) {
-        console.log(`📝 Creating new user ${userId}...`);
+        console.log(`🆕 Creating new user ${userId}...`);
         await database.createUser(userId, {
             username,
             first_name: firstName,
@@ -121,7 +123,7 @@ bot.action(/language_(de|en)/, async (ctx) => {
     const userId = ctx.from.id;
     const language = ctx.match[1];
 
-    console.log(`🌐 User ${userId} selected language: ${language}`);
+    console.log(`🌍 User ${userId} selected language: ${language}`);
 
     await database.updateUser(userId, {
         language,
@@ -135,14 +137,12 @@ bot.action(/language_(de|en)/, async (ctx) => {
     const phoneRequired = await shouldRequestPhone();
 
     if (phoneRequired) {
-        // Если включен запрос телефона - показываем его
         console.log(`📱 Phone request is enabled, showing phone keyboard`);
         setTimeout(async () => {
             await requestPhoneNumber(ctx, language);
         }, 1000);
     } else {
-        // Если запрос телефона выключен - сразу показываем приветствие
-        console.log(`⏭️ Phone request is disabled, showing welcome message`);
+        console.log(`⭐️ Phone request is disabled, showing welcome message`);
         setTimeout(async () => {
             await sendWelcomeMessage(ctx, language);
         }, 1000);
@@ -245,6 +245,12 @@ bot.on('text', async (ctx) => {
             await handleBroadcastButtons(ctx);
             return;
         }
+
+        // ⭐ ДОБАВЛЕНО: Если ожидается дата/время
+        if (broadcastStates.isAwaitingDateTime(userId)) {
+            await handleDateTimeInput(ctx);
+            return;
+        }
     }
 
     // Проверяем, ждет ли бот номер телефона
@@ -287,27 +293,37 @@ bot.launch({
     dropPendingUpdates: true
 });
 
-// Ждём небольшую задержку и запускаем планировщик
+// Ждём небольшую задержку и запускаем планировщики
 setTimeout(() => {
     if (bot.botInfo) {
         console.log('✅ Bot started successfully!');
         console.log('🔗 Bot username: @' + bot.botInfo.username);
         console.log('\n📊 Admin Panel: /admin');
-        console.log('🌐 Change Language: /language');
+        console.log('🌍 Change Language: /language');
         console.log('❓ Help: /help');
         console.log('📱 Phone Request: configurable in /admin');
 
-        console.log('🔧 Starting notification scheduler...');
+        console.log('\n🔧 Starting notification scheduler...');
         startNotificationScheduler(bot);
+
+        console.log('📅 Starting broadcast scheduler...');
+        startBroadcastScheduler(bot);
     } else {
         console.log('⚠️ Bot not ready yet, retrying...');
         setTimeout(() => {
             console.log('✅ Bot started successfully!');
             console.log('🔗 Bot username: @' + bot.botInfo.username);
             startNotificationScheduler(bot);
+            startBroadcastScheduler(bot);
         }, 2000);
     }
 }, 2000);
+
+bot.command('enablenotifications', async (ctx) => {
+    const userId = ctx.from.id;
+    await database.updateUser(userId, { notifications_enabled: true });
+    await ctx.reply('✅ Notifications enabled for testing!');
+});
 
 // Graceful shutdown
 process.once('SIGINT', () => {
