@@ -13,7 +13,8 @@ async function getRandomPromo(language) {
         if (template) {
             return {
                 text: template.text,
-                image: template.image_url
+                image: template.image_url,
+                buttons: template.buttons || []
             };
         }
         
@@ -94,12 +95,19 @@ async function sendPromoToUser(bot, user) {
     try {
         const language = user.language || 'en';
         const promo = await getRandomPromo(language);
-        const keyboard = getMainKeyboard(language);
 
         // Если нет промо-шаблонов, пропускаем отправку
         if (!promo) {
             console.log(`⏭️ No promo templates available, skipping user ${user.user_id}`);
             return false;
+        }
+
+        // Создаем клавиатуру из кнопок шаблона
+        let keyboard = null;
+        if (promo.buttons && promo.buttons.length > 0) {
+            keyboard = Markup.inlineKeyboard(
+                promo.buttons.map(btn => [Markup.button.url(btn.text, btn.url)])
+            );
         }
 
         // Отправляем с картинкой
@@ -109,14 +117,14 @@ async function sendPromoToUser(bot, user) {
                 promo.image,
                 {
                     caption: promo.text,
-                    ...keyboard
+                    ...(keyboard || {})
                 }
             );
         } else {
             await bot.telegram.sendMessage(
                 user.user_id,
                 promo.text,
-                keyboard
+                keyboard || {}
             );
         }
 
