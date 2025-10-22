@@ -47,6 +47,10 @@ export function getAdminKeyboard(language) {
             'admin_broadcast'
         )],
         [Markup.button.callback(
+            '📢 Уведомления',
+            'admin_notifications'
+        )],
+        [Markup.button.callback(
             t('admin.button_export', language),
             'admin_export'
         )],
@@ -123,6 +127,10 @@ export function getSettingsKeyboard(language) {
         [Markup.button.callback(
             t('admin.settings.notification_interval', language),
             'settings_interval'
+        )],
+        [Markup.button.callback(
+            t('admin.settings.notification_interval_minutes', language),
+            'settings_interval_minutes'
         )],
         [Markup.button.callback(
             t('admin.settings.button_toggle_phone', language),

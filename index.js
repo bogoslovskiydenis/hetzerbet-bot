@@ -18,7 +18,8 @@ import {
     handleDateTimeInput
 } from './src/handlers/admin/broadcast.js';
 import { registerExportHandlers } from './src/handlers/admin/export.js';
-import { registerSettingsHandlers } from './src/handlers/admin/settings.js';
+import { registerSettingsHandlers, handleNotificationIntervalInput, handleNotificationIntervalMinutesInput } from './src/handlers/admin/settings.js';
+import { registerNotificationHandlers, handleNotificationInput } from './src/handlers/admin/notifications.js';
 import {
     shouldRequestPhone,
     requestPhoneNumber,
@@ -35,6 +36,9 @@ import { broadcastStates } from './src/utils/broadcastStates.js';
 dotenv.config();
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
+
+// Делаем бот доступным глобально для перезапуска планировщиков
+global.bot = bot;
 
 // ========== HELPER FUNCTIONS ==========
 
@@ -207,6 +211,7 @@ bot.action('unsubscribe_no', async (ctx) => {
 registerAdminHandlers(bot);
 registerStatisticsHandlers(bot);
 registerBroadcastHandlers(bot);
+registerNotificationHandlers(bot);
 registerExportHandlers(bot);
 registerSettingsHandlers(bot);
 
@@ -225,6 +230,27 @@ bot.on('text', async (ctx) => {
 
     // Проверяем, является ли пользователь админом
     const isAdmin = await database.isAdmin(userId);
+
+    // Если админ ожидает ввод интервала уведомлений
+    if (isAdmin) {
+        const user = await database.getUser(userId);
+        if (user?.awaiting_input === 'notification_interval') {
+            await handleNotificationIntervalInput(ctx, text);
+            return;
+        }
+        
+        // Если админ ожидает ввод интервала в минутах
+        if (user?.awaiting_input === 'notification_interval_minutes') {
+            await handleNotificationIntervalMinutesInput(ctx, text);
+            return;
+        }
+        
+        // Если админ ожидает ввод данных для уведомлений
+        if (user?.awaiting_input?.startsWith('notification_')) {
+            await handleNotificationInput(ctx, text);
+            return;
+        }
+    }
 
     // Если админ в процессе создания рассылки
     if (isAdmin && broadcastStates.isActive(userId)) {

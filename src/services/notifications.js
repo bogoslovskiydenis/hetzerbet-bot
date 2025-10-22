@@ -4,49 +4,30 @@ import { t } from '../locales/i18n.js';
 import { getMainKeyboard } from '../utils/keyboards.js';
 
 /**
- * Список промо-сообщений
- * Каждое промо содержит текст на обоих языках и медиа
+ * Получить случайное промо-сообщение из БД
  */
-const PROMO_MESSAGES = [
-    {
-        de: {
-            text: t('notifications.promo_1', 'de'),
-            image: 'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800'
-        },
-        en: {
-            text: t('notifications.promo_1', 'en'),
-            image: 'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800'
+async function getRandomPromo(language) {
+    try {
+        const template = await database.getRandomNotificationTemplate(language);
+        
+        if (template) {
+            return {
+                text: template.text,
+                image: template.image_url
+            };
         }
-    },
-    {
-        de: {
-            text: t('notifications.promo_2', 'de'),
-            image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800'
-        },
-        en: {
-            text: t('notifications.promo_2', 'en'),
-            image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800'
-        }
-    },
-    {
-        de: {
-            text: t('notifications.promo_3', 'de'),
-            image: 'https://images.unsplash.com/photo-1579547944212-c4f4961a8dd8?w=800'
-        },
-        en: {
-            text: t('notifications.promo_3', 'en'),
-            image: 'https://images.unsplash.com/photo-1579547944212-c4f4961a8dd8?w=800'
-        }
+        
+        // Если нет шаблонов в БД - возвращаем null, чтобы пропустить отправку
+        console.log('⚠️ No notification templates in DB, please create some via admin panel');
+        return null;
+        
+    } catch (error) {
+        console.error('❌ Error getting random promo:', error);
+        return {
+            text: `❌ Ошибка загрузки уведомлений\n\nПожалуйста, обратитесь к администратору`,
+            image: null
+        };
     }
-];
-
-/**
- * Получить случайное промо-сообщение
- */
-function getRandomPromo(language) {
-    const randomIndex = Math.floor(Math.random() * PROMO_MESSAGES.length);
-    const promo = PROMO_MESSAGES[randomIndex];
-    return promo[language] || promo.en;
 }
 
 /**
@@ -112,8 +93,14 @@ async function canSendNotification(user, settings) {
 async function sendPromoToUser(bot, user) {
     try {
         const language = user.language || 'en';
-        const promo = getRandomPromo(language);
+        const promo = await getRandomPromo(language);
         const keyboard = getMainKeyboard(language);
+
+        // Если нет промо-шаблонов, пропускаем отправку
+        if (!promo) {
+            console.log(`⏭️ No promo templates available, skipping user ${user.user_id}`);
+            return false;
+        }
 
         // Отправляем с картинкой
         if (promo.image) {
@@ -174,6 +161,18 @@ export async function sendScheduledPromos(bot) {
         // Получаем настройки
         const settings = await database.getBotSettings();
 
+        // Проверяем, есть ли шаблоны уведомлений
+        const templates = await database.getNotificationTemplates();
+        if (templates.length === 0) {
+            console.log('⚠️ No notification templates found, skipping promo round');
+            return {
+                sent: 0,
+                skipped: 0,
+                failed: 0,
+                total: 0
+            };
+        }
+
         // Получаем всех пользователей с включенными уведомлениями
         const users = await database.getUsersWithNotifications();
 
@@ -227,36 +226,52 @@ export async function sendScheduledPromos(bot) {
     }
 }
 
+// Глобальная переменная для хранения интервала
+let notificationInterval = null;
+
 /**
  * Запустить планировщик уведомлений
  */
 export function startNotificationScheduler(bot) {
     console.log('\n⏰ Starting notification scheduler...');
 
-    // Получаем интервал из настроек (по умолчанию 2 часа)
-    database.getBotSettings().then(settings => {
-        // ⚠️ ТЕСТОВЫЙ РЕЖИМ: 1 минута
-        // Раскомментируйте для продакшена:
-        // const intervalHours = settings?.notification_interval_hours || 2;
-        // const intervalMs = intervalHours * 60 * 60 * 1000;
+    // Останавливаем предыдущий интервал если есть
+    if (notificationInterval) {
+        clearInterval(notificationInterval);
+        notificationInterval = null;
+    }
 
-        // 🧪 Для тестирования: 1 минута
-        const intervalMinutes = 1;
+    // Получаем интервал из настроек
+    database.getBotSettings().then(settings => {
+        // Используем интервал в минутах, если он задан, иначе используем часы
+        const intervalMinutes = settings?.notification_interval_minutes || (settings?.notification_interval_hours || 2) * 60;
         const intervalMs = intervalMinutes * 60 * 1000;
 
-        console.log(`✅ Notification scheduler started (TEST MODE: ${intervalMinutes} minute)`);
+        console.log(`✅ Notification scheduler started`);
+        console.log(`   Interval: ${intervalMinutes} minutes`);
         console.log(`   Next promo round: ${new Date(Date.now() + intervalMs).toLocaleString()}`);
 
-        // Первая отправка через 10 секунд после запуска (для быстрого теста)
+        // Первая отправка через 30 секунд после запуска
         setTimeout(() => {
             sendScheduledPromos(bot);
-        }, 10 * 1000); // 10 секунд
+        }, 30 * 1000);
 
-        // Регулярная отправка каждую минуту
-        setInterval(async () => {
+        // Регулярная отправка по настроенному интервалу
+        notificationInterval = setInterval(async () => {
             await sendScheduledPromos(bot);
         }, intervalMs);
     });
+}
+
+/**
+ * Остановить планировщик уведомлений
+ */
+export function stopNotificationScheduler() {
+    if (notificationInterval) {
+        clearInterval(notificationInterval);
+        notificationInterval = null;
+        console.log('⏹️ Notification scheduler stopped');
+    }
 }
 
 /**
@@ -264,7 +279,7 @@ export function startNotificationScheduler(bot) {
  */
 export async function sendTestPromo(bot, adminId, language) {
     try {
-        const promo = getRandomPromo(language);
+        const promo = await getRandomPromo(language);
         const keyboard = getMainKeyboard(language);
 
         await bot.telegram.sendPhoto(

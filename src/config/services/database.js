@@ -152,6 +152,7 @@ export class Database {
             const defaultSettings = {
                 phone_number_required: false,
                 notification_interval_hours: 2,
+                notification_interval_minutes: 120, // 2 часа в минутах
                 notification_schedule: {
                     enabled: true,
                     quiet_hours_start: 23,
@@ -588,6 +589,134 @@ export class Database {
             return broadcastRef.id;
         } catch (error) {
             console.error('❌ Error creating scheduled broadcast:', error);
+            return null;
+        }
+    }
+
+    // ========== NOTIFICATION TEMPLATES ==========
+
+    /**
+     * Создать шаблон уведомления
+     */
+    async createNotificationTemplate(templateData) {
+        try {
+            const templateRef = await this.notificationsCollection.add({
+                name: templateData.name,
+                text_de: templateData.text_de,
+                text_en: templateData.text_en,
+                image_url: templateData.image_url || null,
+                buttons: templateData.buttons || [],
+                is_active: templateData.is_active !== false, // по умолчанию активен
+                created_by: templateData.admin_id,
+                created_at: admin.firestore.FieldValue.serverTimestamp(),
+                updated_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            console.log(`✅ Notification template ${templateRef.id} created`);
+            return templateRef.id;
+        } catch (error) {
+            console.error('❌ Error creating notification template:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Получить все шаблоны уведомлений
+     */
+    async getNotificationTemplates() {
+        try {
+            const snapshot = await this.notificationsCollection
+                .where('is_active', '==', true)
+                .get();
+
+            const templates = [];
+            snapshot.forEach(doc => {
+                templates.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Сортируем в коде вместо orderBy в запросе
+            templates.sort((a, b) => b.created_at - a.created_at);
+
+            console.log(`✅ Retrieved ${templates.length} notification templates`);
+            return templates;
+        } catch (error) {
+            console.error('❌ Error getting notification templates:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Получить шаблон уведомления по ID
+     */
+    async getNotificationTemplate(templateId) {
+        try {
+            const doc = await this.notificationsCollection.doc(templateId).get();
+            if (doc.exists) {
+                return { id: doc.id, ...doc.data() };
+            }
+            return null;
+        } catch (error) {
+            console.error('❌ Error getting notification template:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Обновить шаблон уведомления
+     */
+    async updateNotificationTemplate(templateId, updates) {
+        try {
+            await this.notificationsCollection.doc(templateId).update({
+                ...updates,
+                updated_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            console.log(`✅ Notification template ${templateId} updated`);
+            return true;
+        } catch (error) {
+            console.error('❌ Error updating notification template:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Удалить шаблон уведомления
+     */
+    async deleteNotificationTemplate(templateId) {
+        try {
+            await this.notificationsCollection.doc(templateId).update({
+                is_active: false,
+                deleted_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            console.log(`✅ Notification template ${templateId} deleted`);
+            return true;
+        } catch (error) {
+            console.error('❌ Error deleting notification template:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Получить случайный активный шаблон уведомления
+     */
+    async getRandomNotificationTemplate(language = 'en') {
+        try {
+            const templates = await this.getNotificationTemplates();
+            
+            if (templates.length === 0) {
+                console.log('⚠️ No active notification templates found');
+                return null;
+            }
+
+            const randomIndex = Math.floor(Math.random() * templates.length);
+            const template = templates[randomIndex];
+
+            return {
+                text: template[`text_${language}`] || template.text_en,
+                image_url: template.image_url,
+                buttons: template.buttons || []
+            };
+        } catch (error) {
+            console.error('❌ Error getting random notification template:', error);
             return null;
         }
     }
