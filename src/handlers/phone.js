@@ -1,7 +1,7 @@
 import { Markup } from 'telegraf';
 import { database } from '../config/services/database.js';
 import { t } from '../locales/i18n.js';
-import { getMainKeyboard } from '../utils/keyboards.js';
+import { sendWelcomeMessageWithImage } from '../utils/welcome.js';
 
 /**
  * Получить язык пользователя
@@ -81,7 +81,7 @@ export async function handlePhoneContact(ctx) {
     );
 
     // Отправляем приветственное сообщение
-    await sendWelcomeMessage(ctx, lang);
+    await sendWelcomeMessageWithImage(ctx, lang);
 }
 
 /**
@@ -114,42 +114,9 @@ export async function handlePhoneSkip(ctx) {
     );
 
     // Отправляем приветственное сообщение
-    await sendWelcomeMessage(ctx, lang);
+    await sendWelcomeMessageWithImage(ctx, lang);
 
     return true;
-}
-
-/**
- * Отправить приветственное сообщение с кнопками
- */
-async function sendWelcomeMessage(ctx, language) {
-    const welcomeImageUrl = "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800";
-
-    if (welcomeImageUrl) {
-        // Если есть изображение - отправляем с caption
-        try {
-            await ctx.replyWithPhoto(
-                welcomeImageUrl,
-                {
-                    caption: t('main.welcome_text', language),
-                    ...getMainKeyboard(language)
-                }
-            );
-        } catch (error) {
-            console.error('❌ Error sending welcome image:', error);
-            // Если ошибка с изображением - отправляем просто текст
-            await ctx.reply(
-                t('main.welcome_text', language),
-                getMainKeyboard(language)
-            );
-        }
-    } else {
-        // Если нет изображения - просто текст с кнопками
-        await ctx.reply(
-            t('main.welcome_text', language),
-            getMainKeyboard(language)
-        );
-    }
 }
 
 /**

@@ -7,6 +7,7 @@ import {
     getMainKeyboard,
     getLanguageKeyboard
 } from './src/utils/keyboards.js';
+import { sendWelcomeMessageWithImage } from './src/utils/welcome.js';
 
 // Импорт обработчиков
 import { registerAdminHandlers } from './src/handlers/admin/index.js';
@@ -47,37 +48,14 @@ async function getUserLanguage(userId) {
     return user?.language || 'en';
 }
 
-// Вспомогательная функция для отправки приветственного сообщения
+// Вспомогательная функция для отправки приветственного сообщения (с обновлением onboarding)
 async function sendWelcomeMessage(ctx, language) {
     await database.updateUser(ctx.from.id, {
         onboarding_step: 'completed',
         onboarding_completed: true
     });
 
-    const welcomeImageUrl = "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800";
-
-    if (welcomeImageUrl) {
-        try {
-            await ctx.replyWithPhoto(
-                welcomeImageUrl,
-                {
-                    caption: t('main.welcome_text', language),
-                    ...getMainKeyboard(language)
-                }
-            );
-        } catch (error) {
-            console.error('❌ Error sending welcome image:', error);
-            await ctx.reply(
-                t('main.welcome_text', language),
-                getMainKeyboard(language)
-            );
-        }
-    } else {
-        await ctx.reply(
-            t('main.welcome_text', language),
-            getMainKeyboard(language)
-        );
-    }
+    await sendWelcomeMessageWithImage(ctx, language);
 }
 
 // ========== TELEGRAM BOT ==========
@@ -114,10 +92,7 @@ bot.command('start', async (ctx) => {
                 languageKeyboard
             );
         } else {
-            await ctx.reply(
-                t('main.welcome_text', lang),
-                getMainKeyboard(lang)
-            );
+            await sendWelcomeMessageWithImage(ctx, lang);
         }
     }
 });
@@ -135,21 +110,23 @@ bot.action(/language_(de|en)/, async (ctx) => {
     });
 
     await ctx.answerCbQuery();
-    await ctx.editMessageText(t('welcome.language_selected', language));
+    
+    // Удаляем сообщение с выбором языка
+    try {
+        await ctx.deleteMessage();
+    } catch (error) {
+        console.log('Could not delete message (might be too old)');
+    }
 
     // Проверяем, нужно ли запрашивать номер телефона
     const phoneRequired = await shouldRequestPhone();
 
     if (phoneRequired) {
         console.log(`📱 Phone request is enabled, showing phone keyboard`);
-        setTimeout(async () => {
-            await requestPhoneNumber(ctx, language);
-        }, 1000);
+        await requestPhoneNumber(ctx, language);
     } else {
         console.log(`⭐️ Phone request is disabled, showing welcome message`);
-        setTimeout(async () => {
-            await sendWelcomeMessage(ctx, language);
-        }, 1000);
+        await sendWelcomeMessage(ctx, language);
     }
 });
 
@@ -293,11 +270,8 @@ bot.on('text', async (ctx) => {
     // Обновляем последнюю активность
     await database.updateUser(userId, {});
 
-    // Отправляем приветственное сообщение с кнопками
-    await ctx.reply(
-        t('main.welcome_text', lang),
-        getMainKeyboard(lang)
-    );
+    // Отправляем приветственное сообщение с изображением и кнопками (эхо-функция)
+    await sendWelcomeMessageWithImage(ctx, lang);
 });
 
 // ========== ОБРАБОТКА ОШИБОК ==========
