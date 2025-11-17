@@ -259,15 +259,17 @@ export function startNotificationScheduler(bot) {
         console.log(`   Interval: ${intervalMinutes} minutes`);
         console.log(`   Next promo round: ${new Date(Date.now() + intervalMs).toLocaleString()}`);
 
-        // Первая отправка через 30 секунд после запуска
-        setTimeout(() => {
-            sendScheduledPromos(bot);
-        }, 30 * 1000);
+        // Функция для запуска следующего раунда
+        const scheduleNextRound = () => {
+            notificationInterval = setTimeout(async () => {
+                await sendScheduledPromos(bot);
+                // Планируем следующий раунд после отправки
+                scheduleNextRound();
+            }, intervalMs);
+        };
 
-        // Регулярная отправка по настроенному интервалу
-        notificationInterval = setInterval(async () => {
-            await sendScheduledPromos(bot);
-        }, intervalMs);
+        // Запускаем первый раунд через полный интервал
+        scheduleNextRound();
     });
 }
 
@@ -276,7 +278,7 @@ export function startNotificationScheduler(bot) {
  */
 export function stopNotificationScheduler() {
     if (notificationInterval) {
-        clearInterval(notificationInterval);
+        clearTimeout(notificationInterval);
         notificationInterval = null;
         console.log('⏹️ Notification scheduler stopped');
     }
