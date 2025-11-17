@@ -68,6 +68,10 @@ export function getAdminKeyboard(language) {
             '📢 Уведомления',
             'admin_notifications'
         )],
+        // [Markup.button.callback(
+        //     t('admin.button_promolinks', language),
+        //     'admin_promolinks'
+        // )],
         [Markup.button.callback(
             t('admin.button_export', language),
             'admin_export'

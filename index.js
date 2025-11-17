@@ -21,6 +21,7 @@ import {
 import { registerExportHandlers } from './src/handlers/admin/export.js';
 import { registerSettingsHandlers, handleNotificationIntervalInput, handleNotificationIntervalMinutesInput } from './src/handlers/admin/settings.js';
 import { registerNotificationHandlers, handleNotificationInput } from './src/handlers/admin/notifications.js';
+// import { registerPromoLinksHandlers, handlePromoLinkInput } from './src/handlers/admin/promoLinks.js';
 import {
     shouldRequestPhone,
     requestPhoneNumber,
@@ -71,6 +72,13 @@ bot.command('start', async (ctx) => {
     const username = ctx.from.username;
     const firstName = ctx.from.first_name;
     const chatType = ctx.chat?.type;
+    // const payload = ctx.message?.text?.split(' ')[1] || '';
+    // let promoSlug = null;
+    //
+    // if (payload?.startsWith('promo_')) {
+    //     promoSlug = payload.replace('promo_', '').toLowerCase();
+    //     await database.incrementPromoLinkUsage(promoSlug);
+    // }
 
     // Игнорируем команды из групп/каналов - бот работает только в личных сообщениях
     if (chatType !== 'private') {
@@ -87,6 +95,7 @@ bot.command('start', async (ctx) => {
         await database.createUser(userId, {
             username,
             first_name: firstName,
+            // promo_source: promoSlug
         });
 
         const languageKeyboard = getLanguageKeyboard();
@@ -95,6 +104,10 @@ bot.command('start', async (ctx) => {
             languageKeyboard
         );
     } else {
+        // if (promoSlug && user.promo_source !== promoSlug) {
+        //     await database.updateUser(userId, { promo_source: promoSlug });
+        // }
+
         const lang = user.language || 'en';
 
         if (!user.language) {
@@ -283,6 +296,7 @@ registerBroadcastHandlers(bot);
 registerNotificationHandlers(bot);
 registerExportHandlers(bot);
 registerSettingsHandlers(bot);
+// registerPromoLinksHandlers(bot);
 
 // ========== ОБРАБОТКА КОНТАКТОВ И ТЕКСТА ==========
 
@@ -314,6 +328,11 @@ bot.on('text', async (ctx) => {
     // Если админ ожидает ввод интервала уведомлений
     if (isAdmin) {
         const user = await database.getUser(userId);
+
+        // if (user?.awaiting_input === 'promo_link_create') {
+        //     await handlePromoLinkInput(ctx, text);
+        //     return;
+        // }
         if (user?.awaiting_input === 'notification_interval') {
             await handleNotificationIntervalInput(ctx, text);
             return;

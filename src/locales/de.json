@@ -39,6 +39,7 @@
     "panel_title": "📊 ADMIN-PANEL",
     "button_statistics": "📈 Statistiken",
     "button_broadcast": "📢 Broadcast",
+    "button_promolinks": "🔗 Promo-Links",
     "button_export": "💾 Daten exportieren",
     "button_settings": "⚙️ Einstellungen",
     "button_back": "◀️ Zurück",
@@ -148,6 +149,23 @@
       "test_failed": "❌ Test-Benachrichtigung konnte nicht gesendet werden.",
       "invalid_buttons_format": "❌ Ungültiges Button-Format. Verwenden Sie: Text | URL",
       "too_many_buttons": "❌ Zu viele Buttons! Maximal 8 erlaubt."
+    },
+    "promolinks": {
+      "menu_title": "🔗 PROMO-LINKS\n\nErstellen Sie individuelle Startlinks, um Traffic-Quellen zu verfolgen.",
+      "create_new": "➕ Promo-Link erstellen",
+      "list": "📋 Promo-Links anzeigen",
+      "input_format": "➕ PROMO-LINK ERSTELLEN\n\nDaten im Format eingeben:\nslug Beschreibung\n\nBeispiel:\ninstagram Werbung für Slots\n\n⚠️ Regeln:\n• Nur lateinische Buchstaben, Zahlen, _ oder -\n• Keine Leerzeichen\n• 3-30 Zeichen\n\n/cancel eingeben, um abzubrechen.",
+      "invalid_format": "❌ Ungültiges Format. Verwenden Sie: slug Beschreibung",
+      "invalid_slug": "❌ Slug muss 3-30 Zeichen enthalten: Buchstaben, Zahlen, _ oder -",
+      "description_required": "❌ Beschreibung ist erforderlich.",
+      "slug_exists": "⚠️ Dieser Slug existiert bereits. Bitte anderen wählen.",
+      "created": "✅ Promo-Link erstellt!\n\nSlug: {slug}\n📄 {description}\n🔗 {link}",
+      "list_empty": "📋 Noch keine Promo-Links vorhanden.",
+      "list_item": "{index}. {slug}\n📄 {description}\n👤 Starts: {clicks}\n🔗 {link}",
+      "cancelled": "❌ Erstellung des Promo-Links abgebrochen.",
+      "deleting": "Lösche...",
+      "deleted": "✅ Promo-Link entfernt.",
+      "delete_not_found": "⚠️ Promo-Link nicht gefunden."
     }
   },
   "notifications": {

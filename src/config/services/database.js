@@ -8,6 +8,7 @@ export class Database {
         this.broadcastsCollection = db.collection('broadcasts');
         this.notificationsCollection = db.collection('notifications');
         this.statsCollection = db.collection('statistics');
+        // this.promoLinksCollection = db.collection('promo_links');
         this.buttonStatsCollection = db.collection('button_stats');
     }
 
@@ -47,6 +48,7 @@ export class Database {
                 last_activity: admin.firestore.FieldValue.serverTimestamp(),
                 onboarding_completed: false,
                 onboarding_step: 'language_selection',
+                // promo_source: userData.promo_source || null,
             });
             console.log(`✅ User ${userId} created successfully`);
             return true;
@@ -225,6 +227,16 @@ export class Database {
             return [];
         }
     }
+
+    /* Promo links temporarily disabled
+    // ========== PROMO LINKS ==========
+
+    async createPromoLink({ slug, description, admin_id }) { ... }
+    async getPromoLinks() { ... }
+    async incrementPromoLinkUsage(slug) { ... }
+    async getPromoLink(slug) { ... }
+    async deletePromoLink(slug) { ... }
+    */
 
     // ========== SETTINGS ==========
 

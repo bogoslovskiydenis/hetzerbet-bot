@@ -39,6 +39,7 @@
     "panel_title": "📊 ADMIN PANEL",
     "button_statistics": "📈 Statistics",
     "button_broadcast": "📢 Broadcast",
+    "button_promolinks": "🔗 Promo Links",
     "button_export": "💾 Export Data",
     "button_settings": "⚙️ Settings",
     "button_back": "◀️ Back",
@@ -165,6 +166,23 @@
       "test_failed": "❌ Failed to send test notification.",
       "invalid_buttons_format": "❌ Invalid button format. Use: Text | URL",
       "too_many_buttons": "❌ Too many buttons! Maximum 8 allowed."
+    },
+    "promolinks": {
+      "menu_title": "🔗 PROMO LINKS\n\nCreate unique start links to track traffic sources.",
+      "create_new": "➕ Create promo link",
+      "list": "📋 View promo links",
+      "input_format": "➕ CREATE PROMO LINK\n\nEnter data in format:\nslug Description\n\nExample:\ninstagram Test traffic for reels\n\n⚠️ Rules:\n• Latin letters, digits, _ or -\n• No spaces\n• 3-30 characters\n\nType /cancel to abort.",
+      "invalid_format": "❌ Invalid format. Use: slug Description",
+      "invalid_slug": "❌ Slug must contain 3-30 characters: letters, digits, _ or -",
+      "description_required": "❌ Description is required.",
+      "slug_exists": "⚠️ This slug already exists. Choose another.",
+      "created": "✅ Promo link created!\n\nSlug: {slug}\n📄 {description}\n🔗 {link}",
+      "list_empty": "📋 No promo links yet.",
+      "list_item": "{index}. {slug}\n📄 {description}\n👤 Starts: {clicks}\n🔗 {link}",
+      "cancelled": "❌ Promo link creation cancelled.",
+      "deleting": "Deleting...",
+      "deleted": "✅ Promo link deleted.",
+      "delete_not_found": "⚠️ Promo link not found."
     }
   },
   "notifications": {
