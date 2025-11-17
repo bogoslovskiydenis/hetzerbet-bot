@@ -28,6 +28,11 @@ import {
     handlePhoneSkip,
     isAwaitingPhone
 } from './src/handlers/phone.js';
+import {
+    checkSubscription,
+    getSubscriptionKeyboard,
+    requireSubscription
+} from './src/middlewares/subscription.js';
 
 // ⭐ ДОБАВЛЕНО: Импорт планировщиков
 import { startNotificationScheduler } from './src/services/notifications.js';
@@ -65,6 +70,13 @@ bot.command('start', async (ctx) => {
     const userId = ctx.from.id;
     const username = ctx.from.username;
     const firstName = ctx.from.first_name;
+    const chatType = ctx.chat?.type;
+
+    // Игнорируем команды из групп/каналов - бот работает только в личных сообщениях
+    if (chatType !== 'private') {
+        console.log(`⚠️ Игнорирую /start из ${chatType} (chat: ${ctx.chat?.id})`);
+        return;
+    }
 
     console.log(`\n👤 User ${userId} (@${username}) started the bot`);
 
@@ -92,6 +104,19 @@ bot.command('start', async (ctx) => {
                 languageKeyboard
             );
         } else {
+            // Проверяем подписку на канал для существующих пользователей
+            const isSubscribed = await checkSubscription(ctx);
+            
+            if (!isSubscribed) {
+                console.log(`📢 User ${userId} is not subscribed, showing subscription request`);
+                const keyboard = getSubscriptionKeyboard(lang);
+                await ctx.reply(
+                    t('subscription.not_subscribed', lang),
+                    keyboard
+                );
+                return;
+            }
+            
             await sendWelcomeMessageWithImage(ctx, lang);
         }
     }
@@ -118,6 +143,19 @@ bot.action(/language_(de|en)/, async (ctx) => {
         console.log('Could not delete message (might be too old)');
     }
 
+    // Проверяем подписку на канал
+    const isSubscribed = await checkSubscription(ctx);
+    
+    if (!isSubscribed) {
+        console.log(`📢 User ${userId} is not subscribed, showing subscription request`);
+        const keyboard = getSubscriptionKeyboard(language);
+        await ctx.reply(
+            t('subscription.not_subscribed', language),
+            keyboard
+        );
+        return;
+    }
+
     // Проверяем, нужно ли запрашивать номер телефона
     const phoneRequired = await shouldRequestPhone();
 
@@ -132,6 +170,8 @@ bot.action(/language_(de|en)/, async (ctx) => {
 
 // Команда /language - смена языка
 bot.command('language', async (ctx) => {
+    if (ctx.chat?.type !== 'private') return; // Игнорируем команды из групп
+    
     const userId = ctx.from.id;
     const lang = await getUserLanguage(userId);
 
@@ -144,6 +184,8 @@ bot.command('language', async (ctx) => {
 
 // Команда /help
 bot.command('help', async (ctx) => {
+    if (ctx.chat?.type !== 'private') return; // Игнорируем команды из групп
+    
     const userId = ctx.from.id;
     const lang = await getUserLanguage(userId);
 
@@ -152,6 +194,8 @@ bot.command('help', async (ctx) => {
 
 // Команда /unsubscribe - отключение уведомлений
 bot.command('unsubscribe', async (ctx) => {
+    if (ctx.chat?.type !== 'private') return; // Игнорируем команды из групп
+    
     const userId = ctx.from.id;
     const lang = await getUserLanguage(userId);
 
@@ -184,6 +228,46 @@ bot.action('unsubscribe_no', async (ctx) => {
     await ctx.editMessageText(t('commands.unsubscribe_cancelled', lang));
 });
 
+// Обработка проверки подписки на канал
+bot.action('check_subscription', async (ctx) => {
+    const userId = ctx.from.id;
+    const lang = await getUserLanguage(userId);
+    
+    await ctx.answerCbQuery('Проверяю подписку...', { show_alert: false });
+    
+    const isSubscribed = await checkSubscription(ctx);
+    
+    if (!isSubscribed) {
+        // Не подписан - показываем сообщение
+        await ctx.reply(
+            t('subscription.not_subscribed', lang),
+            getSubscriptionKeyboard(lang)
+        );
+        return;
+    }
+    
+    // Подписан - удаляем сообщение с просьбой подписаться
+    try {
+        await ctx.deleteMessage();
+    } catch (error) {
+        console.log('Could not delete message');
+    }
+    
+    // Отправляем сообщение об успешной проверке
+    await ctx.reply(t('subscription.success', lang));
+    
+    // Продолжаем онбординг - проверяем номер телефона
+    const phoneRequired = await shouldRequestPhone();
+    
+    if (phoneRequired) {
+        console.log(`📱 Phone request is enabled, showing phone keyboard`);
+        await requestPhoneNumber(ctx, lang);
+    } else {
+        console.log(`⭐️ Phone request is disabled, showing welcome message`);
+        await sendWelcomeMessage(ctx, lang);
+    }
+});
+
 // ========== РЕГИСТРАЦИЯ АДМИН-ОБРАБОТЧИКОВ ==========
 registerAdminHandlers(bot);
 registerStatisticsHandlers(bot);
@@ -196,12 +280,23 @@ registerSettingsHandlers(bot);
 
 // Обработка контакта (номер телефона)
 bot.on('contact', async (ctx) => {
+    if (ctx.chat?.type !== 'private') return; // Игнорируем контакты из групп
+    
     await handlePhoneContact(ctx);
 });
 
 // Обработка всех остальных текстовых сообщений
 bot.on('text', async (ctx) => {
     const userId = ctx.from.id;
+    const chatType = ctx.chat?.type;
+    
+    // ИГНОРИРУЕМ сообщения из групп, супергрупп и каналов
+    // Бот должен работать ТОЛЬКО в личных сообщениях
+    if (chatType !== 'private') {
+        console.log(`⚠️ Игнорирую сообщение из ${chatType} (chat: ${ctx.chat?.id})`);
+        return; // Не обрабатываем сообщения из групп/каналов
+    }
+    
     const lang = await getUserLanguage(userId);
     const text = ctx.message.text;
 
@@ -278,11 +373,15 @@ bot.on('text', async (ctx) => {
 bot.catch((err, ctx) => {
     console.error('❌ Bot error:', err);
     const userId = ctx.from?.id;
+    const chatType = ctx.chat?.type;
 
-    if (userId) {
+    // Отправляем сообщения об ошибках ТОЛЬКО в личные сообщения, не в группы/каналы
+    if (userId && chatType === 'private') {
         getUserLanguage(userId).then(lang => {
             ctx.reply(t('errors.general', lang)).catch(console.error);
         });
+    } else if (chatType === 'group' || chatType === 'supergroup' || chatType === 'channel') {
+        console.log(`⚠️ Ошибка в ${chatType}, не отправляю сообщение (бот не должен спамить в группы)`);
     }
 });
 
@@ -320,6 +419,8 @@ setTimeout(() => {
 }, 2000);
 
 bot.command('enablenotifications', async (ctx) => {
+    if (ctx.chat?.type !== 'private') return; // Игнорируем команды из групп
+    
     const userId = ctx.from.id;
     await database.updateUser(userId, { notifications_enabled: true });
     await ctx.reply('✅ Notifications enabled for testing!');

@@ -2,17 +2,35 @@ import { Markup } from 'telegraf';
 import { t } from '../locales/i18n.js';
 
 /**
+ * Клавиатура для проверки подписки на канал
+ */
+export function getSubscriptionKeyboard(language, channelUrl) {
+    return Markup.inlineKeyboard([
+        [Markup.button.url(
+            t('subscription.button_subscribe', language),
+            channelUrl
+        )],
+        [Markup.button.callback(
+            t('subscription.button_check', language),
+            'check_subscription'
+        )]
+    ]);
+}
+
+/**
  * Основная клавиатура для главного экрана
  */
 export function getMainKeyboard(language) {
+    const miniAppUrl =  'https://lending-hetzer-bot.vercel.app';
+    
     return Markup.inlineKeyboard([
-        [Markup.button.webApp(
-            t('main.button_play_bot', language),
-            process.env.MINI_APP_URL || 'https://hertzbet.com/mini-app'
-        )],
+        [{
+            text: t('main.button_play_bot', language),
+            web_app: { url: miniAppUrl }
+        }],
         [Markup.button.url(
             t('main.button_play_web', language),
-            process.env.WEBSITE_URL || 'https://hertzbet.com/register'
+            process.env.WEBSITE_URL || 'https://lending-hetzer-bot.vercel.app'
         )],
         [Markup.button.switchToChat(
             t('main.button_share', language),
