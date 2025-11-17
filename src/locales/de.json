@@ -51,7 +51,13 @@
       "by_language": "🌐 Nach Sprache:",
       "german": "🇩🇪 Deutsch: {count}",
       "english": "🇬🇧 Englisch: {count}",
-      "not_set": "❓ Nicht festgelegt: {count}"
+      "not_set": "❓ Nicht festgelegt: {count}",
+      "active_7_days": "🔥 Aktiv (7 Tage): {count}",
+      "active_30_days": "📆 Aktiv (30 Tage): {count}",
+      "unsubscribed": "🔕 Benachrichtigungen deaktiviert: {count}",
+      "buttons_title": "🔗 Button-CTR:",
+      "buttons_line": "{label}: {ctr}% ({clicks}/{impressions})",
+      "buttons_empty": "Noch keine Button-Interaktionen erfasst."
     },
     "broadcast": {
       "title": "📢 BROADCAST ERSTELLEN",

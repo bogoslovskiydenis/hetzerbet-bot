@@ -3,6 +3,40 @@ import { t } from '../../locales/i18n.js';
 import { getBackButton } from '../../utils/keyboards.js';
 import { adminMiddleware } from './index.js';
 
+const BUTTON_LABELS = {
+    subscription_check: {
+        en: 'Subscription Check',
+        de: 'Abo prüfen'
+    },
+    unsubscribe_yes: {
+        en: 'Unsubscribe – Yes',
+        de: 'Abmelden – Ja'
+    },
+    unsubscribe_no: {
+        en: 'Unsubscribe – No',
+        de: 'Abmelden – Nein'
+    }
+};
+
+function getButtonLabel(buttonId, lang) {
+    return BUTTON_LABELS[buttonId]?.[lang] || buttonId;
+}
+
+function formatButtonStatsSection(buttonStats = [], lang) {
+    if (!buttonStats.length) {
+        return t('admin.statistics.buttons_empty', lang);
+    }
+
+    return buttonStats
+        .map(stat => t('admin.statistics.buttons_line', lang, {
+            label: getButtonLabel(stat.id, lang),
+            ctr: stat.ctr,
+            clicks: stat.clicks,
+            impressions: stat.impressions
+        }))
+        .join('\n');
+}
+
 /**
  * Получить язык пользователя
  */
@@ -15,6 +49,10 @@ async function getUserLanguage(userId) {
  * Форматировать сообщение со статистикой
  */
 function formatStatisticsMessage(stats, lang) {
+    const activeUsers = stats?.active_users || { last_7_days: 0, last_30_days: 0 };
+    const unsubscribed = stats?.unsubscribed_users || 0;
+    const buttonStats = stats?.button_ctr || [];
+
     return `
 ${t('admin.statistics.title', lang)}
 
@@ -27,6 +65,13 @@ ${t('admin.statistics.by_language', lang)}
 ${t('admin.statistics.german', lang, { count: stats.by_language.de || 0 })}
 ${t('admin.statistics.english', lang, { count: stats.by_language.en || 0 })}
 ${t('admin.statistics.not_set', lang, { count: stats.by_language.null || 0 })}
+
+${t('admin.statistics.active_7_days', lang, { count: activeUsers.last_7_days || 0 })}
+${t('admin.statistics.active_30_days', lang, { count: activeUsers.last_30_days || 0 })}
+${t('admin.statistics.unsubscribed', lang, { count: unsubscribed })}
+
+${t('admin.statistics.buttons_title', lang)}
+${formatButtonStatsSection(buttonStats, lang)}
     `.trim();
 }
 

@@ -1,5 +1,6 @@
 import { getSubscriptionKeyboard as getSubKeyboard } from '../utils/keyboards.js';
 import { t } from '../locales/i18n.js';
+import { database } from '../config/services/database.js';
 
 /**
  * ID или username канала для проверки подписки
@@ -111,6 +112,7 @@ export function subscriptionMiddleware(excludeCommands = []) {
                 t('subscription.not_subscribed', language),
                 keyboard
             );
+            await database.logButtonImpression('subscription_check');
             
             return; // Останавливаем выполнение
         }
@@ -132,6 +134,7 @@ export async function requireSubscription(ctx, language) {
             t('subscription.not_subscribed', language),
             keyboard
         );
+        await database.logButtonImpression('subscription_check');
         return false;
     }
     

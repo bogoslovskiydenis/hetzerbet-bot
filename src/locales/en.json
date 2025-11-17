@@ -51,7 +51,13 @@
       "by_language": "🌐 By Language:",
       "german": "🇩🇪 German: {count}",
       "english": "🇬🇧 English: {count}",
-      "not_set": "❓ Not Set: {count}"
+      "not_set": "❓ Not Set: {count}",
+      "active_7_days": "🔥 Active (7 days): {count}",
+      "active_30_days": "📆 Active (30 days): {count}",
+      "unsubscribed": "🔕 Notifications disabled: {count}",
+      "buttons_title": "🔗 Button CTR:",
+      "buttons_line": "{label}: {ctr}% ({clicks}/{impressions})",
+      "buttons_empty": "No button interactions tracked yet."
     },
     "broadcast": {
       "menu_title": "📢 BROADCAST MANAGEMENT",

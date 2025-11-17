@@ -8,6 +8,7 @@ export class Database {
         this.broadcastsCollection = db.collection('broadcasts');
         this.notificationsCollection = db.collection('notifications');
         this.statsCollection = db.collection('statistics');
+        this.buttonStatsCollection = db.collection('button_stats');
     }
 
     // ========== USERS ==========
@@ -122,6 +123,105 @@ export class Database {
             return users;
         } catch (error) {
             console.error('❌ Error getting users with notifications:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Получить количество активных пользователей за последние N дней
+     */
+    async getActiveUsers(days = 7) {
+        try {
+            const since = new Date();
+            since.setDate(since.getDate() - days);
+            since.setHours(0, 0, 0, 0);
+
+            const snapshot = await this.usersCollection
+                .where('last_activity', '>=', since)
+                .count()
+                .get();
+
+            return snapshot.data().count;
+        } catch (error) {
+            console.error('❌ Error getting active users:', error);
+            return 0;
+        }
+    }
+
+    /**
+     * Получить количество пользователей, отключивших уведомления
+     */
+    async getUnsubscribedUsersCount() {
+        try {
+            const snapshot = await this.usersCollection
+                .where('notifications_enabled', '==', false)
+                .count()
+                .get();
+
+            return snapshot.data().count;
+        } catch (error) {
+            console.error('❌ Error getting unsubscribed users:', error);
+            return 0;
+        }
+    }
+
+    /**
+     * Обновление статистики по кнопкам
+     */
+    async updateButtonStats(buttonId, { impressions = 0, clicks = 0 } = {}) {
+        try {
+            await this.buttonStatsCollection.doc(buttonId).set({
+                button_id: buttonId,
+                impressions: admin.firestore.FieldValue.increment(impressions),
+                clicks: admin.firestore.FieldValue.increment(clicks),
+                updated_at: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            return true;
+        } catch (error) {
+            console.error('❌ Error updating button stats:', error);
+            return false;
+        }
+    }
+
+    async logButtonImpression(buttonId, count = 1) {
+        if (!buttonId) return false;
+        return this.updateButtonStats(buttonId, { impressions: count });
+    }
+
+    async logButtonClick(buttonId, count = 1) {
+        if (!buttonId) return false;
+        return this.updateButtonStats(buttonId, { clicks: count });
+    }
+
+    async getButtonStats(limit = 5) {
+        try {
+            const snapshot = await this.buttonStatsCollection
+                .orderBy('clicks', 'desc')
+                .limit(limit)
+                .get();
+
+            if (snapshot.empty) {
+                return [];
+            }
+
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+                const impressions = data.impressions || 0;
+                const clicks = data.clicks || 0;
+                const ctr = impressions > 0
+                    ? Number(((clicks / impressions) * 100).toFixed(2))
+                    : 0;
+
+                return {
+                    id: doc.id,
+                    impressions,
+                    clicks,
+                    ctr
+                };
+            });
+        } catch (error) {
+            console.error('❌ Error getting button stats:', error);
             return [];
         }
     }
@@ -331,12 +431,26 @@ export class Database {
     // Получить полную статистику
     async getFullStats() {
         try {
-            const [total, weekly, monthly, lastMonth, langStats] = await Promise.all([
+            const [
+                total,
+                weekly,
+                monthly,
+                lastMonth,
+                langStats,
+                active7,
+                active30,
+                unsubscribed,
+                buttonStats
+            ] = await Promise.all([
                 this.getTotalUsers(),
                 this.getWeeklyStats(),
                 this.getCurrentMonthStats(),
                 this.getLastMonthStats(),
-                this.getLanguageStats()
+                this.getLanguageStats(),
+                this.getActiveUsers(7),
+                this.getActiveUsers(30),
+                this.getUnsubscribedUsersCount(),
+                this.getButtonStats()
             ]);
 
             return {
@@ -344,7 +458,13 @@ export class Database {
                 new_this_week: weekly,
                 new_this_month: monthly,
                 new_last_month: lastMonth,
-                by_language: langStats
+                by_language: langStats,
+                active_users: {
+                    last_7_days: active7,
+                    last_30_days: active30
+                },
+                unsubscribed_users: unsubscribed,
+                button_ctr: buttonStats
             };
         } catch (error) {
             console.error('❌ Error getting full stats:', error);

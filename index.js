@@ -114,6 +114,7 @@ bot.command('start', async (ctx) => {
                     t('subscription.not_subscribed', lang),
                     keyboard
                 );
+                await database.logButtonImpression('subscription_check');
                 return;
             }
             
@@ -153,6 +154,7 @@ bot.action(/language_(de|en)/, async (ctx) => {
             t('subscription.not_subscribed', language),
             keyboard
         );
+        await database.logButtonImpression('subscription_check');
         return;
     }
 
@@ -207,12 +209,15 @@ bot.command('unsubscribe', async (ctx) => {
     ]);
 
     await ctx.reply(t('commands.unsubscribe_confirm', lang), keyboard);
+    await database.logButtonImpression('unsubscribe_yes');
+    await database.logButtonImpression('unsubscribe_no');
 });
 
 // Обработка подтверждения отписки
 bot.action('unsubscribe_yes', async (ctx) => {
     const userId = ctx.from.id;
     const lang = await getUserLanguage(userId);
+    await database.logButtonClick('unsubscribe_yes');
 
     await database.updateUser(userId, { notifications_enabled: false });
 
@@ -223,6 +228,7 @@ bot.action('unsubscribe_yes', async (ctx) => {
 bot.action('unsubscribe_no', async (ctx) => {
     const userId = ctx.from.id;
     const lang = await getUserLanguage(userId);
+    await database.logButtonClick('unsubscribe_no');
 
     await ctx.answerCbQuery();
     await ctx.editMessageText(t('commands.unsubscribe_cancelled', lang));
@@ -232,6 +238,7 @@ bot.action('unsubscribe_no', async (ctx) => {
 bot.action('check_subscription', async (ctx) => {
     const userId = ctx.from.id;
     const lang = await getUserLanguage(userId);
+    await database.logButtonClick('subscription_check');
     
     await ctx.answerCbQuery('Проверяю подписку...', { show_alert: false });
     
@@ -243,6 +250,7 @@ bot.action('check_subscription', async (ctx) => {
             t('subscription.not_subscribed', lang),
             getSubscriptionKeyboard(lang)
         );
+        await database.logButtonImpression('subscription_check');
         return;
     }
     
