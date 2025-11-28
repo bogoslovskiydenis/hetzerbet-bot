@@ -16,8 +16,8 @@ import { database } from '../config/services/database.js';
  * Если REQUIRED_CHANNEL не установлен или SUBSCRIPTION_CHECK_ENABLED=false,
  * проверка подписки будет отключена
  */
-const REQUIRED_CHANNEL = process.env.REQUIRED_CHANNEL || '@YmirTest';
-const CHANNEL_INVITE_LINK = process.env.CHANNEL_INVITE_LINK || 'https://t.me/+Yf7qzUub-Lw1ZmYy';
+const TEST_CHANNEL_ID = process.env.TEST_CHANNEL_ID || '';
+const TEST_CHANNEL_INVITE_LINK = process.env.TEST_CHANNEL_LINK || 'https://t.me/+_HejstC1rlsxZmMy';
 const SUBSCRIPTION_CHECK_ENABLED = process.env.SUBSCRIPTION_CHECK_ENABLED !== 'false';
 
 /**
@@ -31,59 +31,59 @@ export async function checkSubscription(ctx) {
     }
     
     // Если канал не указан - пропускаем проверку
-    if (!REQUIRED_CHANNEL) {
-        console.log('⚠️ REQUIRED_CHANNEL is not set, skipping subscription check');
+    if (!TEST_CHANNEL_ID) {
+        console.log('⚠️ TEST_CHANNEL_ID is not set, skipping subscription check');
         return true;
     }
-    
+
     const userId = ctx.from.id; // Объявляем перед try-catch чтобы использовать в обоих блоках
     
     try {
-        console.log(`🔍 Checking subscription for user ${userId} to channel ${REQUIRED_CHANNEL}`);
-        
-        const chatMember = await ctx.telegram.getChatMember(REQUIRED_CHANNEL, userId);
-        
+        console.log(`🔍 Checking subscription for user ${userId} to channel ${TEST_CHANNEL_ID}`);
+
+        const chatMember = await ctx.telegram.getChatMember(TEST_CHANNEL_ID, userId);
+
         console.log(`📊 Chat member status for user ${userId}:`, {
             status: chatMember.status,
             user: chatMember.user.username || chatMember.user.first_name
         });
-        
-        // Статусы: 'creator', 'administrator', 'member' - подписан
-        // 'left', 'kicked' - не подписан
+
         const isSubscribed = ['creator', 'administrator', 'member'].includes(chatMember.status);
-        
-        console.log(`✅ User ${userId} subscription status: ${isSubscribed ? 'SUBSCRIBED' : 'NOT SUBSCRIBED'}`);
-        return isSubscribed;
+
+        if (!isSubscribed) {
+            console.log(`❌ User ${userId} is not subscribed to channel ${TEST_CHANNEL_ID}`);
+            return false;
+        }
     } catch (error) {
-        console.error(`❌ Error checking subscription for user ${userId}:`, error.message);
-        
-        // Обработка специфичных ошибок как в вашем примере
+        console.error(`❌ Error checking subscription for user ${userId} in ${TEST_CHANNEL_ID}:`, error.message);
+
         if (error.message.includes('user not found') ||
             error.message.includes('chat not found') ||
             error.message.includes('USER_NOT_PARTICIPANT')) {
-            console.log(`❌ User ${userId} is not subscribed to channel`);
+            console.log(`❌ User ${userId} is not subscribed to channel ${TEST_CHANNEL_ID}`);
             return false;
         }
-        
-        // Обработка ошибок по кодам
+
         if (error.response?.error_code === 400) {
-            console.error(`❌ Bad Request. Check if REQUIRED_CHANNEL is correct: ${REQUIRED_CHANNEL}`);
-            console.error(`   Убедитесь что бот добавлен админом в канал/группу!`);
+            console.error(`❌ Bad Request. Check if TEST_CHANNEL_ID is correct: ${TEST_CHANNEL_ID}`);
+            console.error('   Убедитесь что бот добавлен админом в канал/группу!');
         } else if (error.response?.error_code === 403) {
-            console.error(`❌ Error: Bot doesn't have permission to access the channel`);
+            console.error('❌ Error: Bot does not have permission to access the channel');
         }
-        
-        // Для других ошибок считаем что не подписан (безопасное поведение)
-        console.error(`❌ Unexpected error, treating as not subscribed`);
+
+        console.error('❌ Unexpected error, treating as not subscribed');
         return false;
     }
+
+    console.log(`✅ User ${userId} is subscribed to required channel`);
+    return true;
 }
 
 /**
  * Клавиатура с кнопкой подписки и проверки
  */
 export function getSubscriptionKeyboard(language) {
-    return getSubKeyboard(language, CHANNEL_INVITE_LINK);
+    return getSubKeyboard(language, TEST_CHANNEL_INVITE_LINK);
 }
 
 /**

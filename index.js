@@ -19,9 +19,9 @@ import {
     handleDateTimeInput
 } from './src/handlers/admin/broadcast.js';
 import { registerExportHandlers } from './src/handlers/admin/export.js';
-import { registerSettingsHandlers, handleNotificationIntervalInput, handleNotificationIntervalMinutesInput } from './src/handlers/admin/settings.js';
+import { registerSettingsHandlers, handleNotificationIntervalInput, handleNotificationIntervalMinutesInput, handleWelcomeTextInput, handleWelcomeImageInput } from './src/handlers/admin/settings.js';
 import { registerNotificationHandlers, handleNotificationInput } from './src/handlers/admin/notifications.js';
-// import { registerPromoLinksHandlers, handlePromoLinkInput } from './src/handlers/admin/promoLinks.js';
+import { registerPromoLinksHandlers, handlePromoLinkInput } from './src/handlers/admin/promoLinks.js';
 import {
     shouldRequestPhone,
     requestPhoneNumber,
@@ -29,11 +29,13 @@ import {
     handlePhoneSkip,
     isAwaitingPhone
 } from './src/handlers/phone.js';
+/*
 import {
     checkSubscription,
     getSubscriptionKeyboard,
     requireSubscription
 } from './src/middlewares/subscription.js';
+*/
 
 // ⭐ ДОБАВЛЕНО: Импорт планировщиков
 import { startNotificationScheduler } from './src/services/notifications.js';
@@ -72,13 +74,13 @@ bot.command('start', async (ctx) => {
     const username = ctx.from.username;
     const firstName = ctx.from.first_name;
     const chatType = ctx.chat?.type;
-    // const payload = ctx.message?.text?.split(' ')[1] || '';
-    // let promoSlug = null;
-    //
-    // if (payload?.startsWith('promo_')) {
-    //     promoSlug = payload.replace('promo_', '').toLowerCase();
-    //     await database.incrementPromoLinkUsage(promoSlug);
-    // }
+    const payload = ctx.message?.text?.split(' ')[1] || '';
+    let promoSlug = null;
+
+    if (payload?.startsWith('promo_')) {
+        promoSlug = payload.replace('promo_', '').toLowerCase();
+        await database.incrementPromoLinkUsage(promoSlug, userId);
+    }
 
     // Игнорируем команды из групп/каналов - бот работает только в личных сообщениях
     if (chatType !== 'private') {
@@ -95,7 +97,7 @@ bot.command('start', async (ctx) => {
         await database.createUser(userId, {
             username,
             first_name: firstName,
-            // promo_source: promoSlug
+            promo_source: promoSlug
         });
 
         const languageKeyboard = getLanguageKeyboard();
@@ -104,9 +106,9 @@ bot.command('start', async (ctx) => {
             languageKeyboard
         );
     } else {
-        // if (promoSlug && user.promo_source !== promoSlug) {
-        //     await database.updateUser(userId, { promo_source: promoSlug });
-        // }
+        if (promoSlug && user.promo_source !== promoSlug) {
+            await database.updateUser(userId, { promo_source: promoSlug });
+        }
 
         const lang = user.language || 'en';
 
@@ -117,6 +119,7 @@ bot.command('start', async (ctx) => {
                 languageKeyboard
             );
         } else {
+            /*
             // Проверяем подписку на канал для существующих пользователей
             const isSubscribed = await checkSubscription(ctx);
             
@@ -130,6 +133,7 @@ bot.command('start', async (ctx) => {
                 await database.logButtonImpression('subscription_check');
                 return;
             }
+            */
             
             await sendWelcomeMessageWithImage(ctx, lang);
         }
@@ -157,6 +161,7 @@ bot.action(/language_(de|en)/, async (ctx) => {
         console.log('Could not delete message (might be too old)');
     }
 
+    /*
     // Проверяем подписку на канал
     const isSubscribed = await checkSubscription(ctx);
     
@@ -170,6 +175,7 @@ bot.action(/language_(de|en)/, async (ctx) => {
         await database.logButtonImpression('subscription_check');
         return;
     }
+    */
 
     // Проверяем, нужно ли запрашивать номер телефона
     const phoneRequired = await shouldRequestPhone();
@@ -247,6 +253,7 @@ bot.action('unsubscribe_no', async (ctx) => {
     await ctx.editMessageText(t('commands.unsubscribe_cancelled', lang));
 });
 
+/*
 // Обработка проверки подписки на канал
 bot.action('check_subscription', async (ctx) => {
     const userId = ctx.from.id;
@@ -288,6 +295,7 @@ bot.action('check_subscription', async (ctx) => {
         await sendWelcomeMessage(ctx, lang);
     }
 });
+*/
 
 // ========== РЕГИСТРАЦИЯ АДМИН-ОБРАБОТЧИКОВ ==========
 registerAdminHandlers(bot);
@@ -296,7 +304,7 @@ registerBroadcastHandlers(bot);
 registerNotificationHandlers(bot);
 registerExportHandlers(bot);
 registerSettingsHandlers(bot);
-// registerPromoLinksHandlers(bot);
+registerPromoLinksHandlers(bot);
 
 // ========== ОБРАБОТКА КОНТАКТОВ И ТЕКСТА ==========
 
@@ -329,10 +337,10 @@ bot.on('text', async (ctx) => {
     if (isAdmin) {
         const user = await database.getUser(userId);
 
-        // if (user?.awaiting_input === 'promo_link_create') {
-        //     await handlePromoLinkInput(ctx, text);
-        //     return;
-        // }
+        if (user?.awaiting_input === 'promo_link_create') {
+            await handlePromoLinkInput(ctx, text);
+            return;
+        }
         if (user?.awaiting_input === 'notification_interval') {
             await handleNotificationIntervalInput(ctx, text);
             return;
@@ -341,6 +349,18 @@ bot.on('text', async (ctx) => {
         // Если админ ожидает ввод интервала в минутах
         if (user?.awaiting_input === 'notification_interval_minutes') {
             await handleNotificationIntervalMinutesInput(ctx, text);
+            return;
+        }
+
+        // Если админ ожидает ввод welcome текста
+        if (user?.awaiting_input === 'welcome_text') {
+            await handleWelcomeTextInput(ctx, text);
+            return;
+        }
+
+        // Если админ ожидает ввод welcome картинки
+        if (user?.awaiting_input === 'welcome_image') {
+            await handleWelcomeImageInput(ctx, text);
             return;
         }
         

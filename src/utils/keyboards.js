@@ -21,7 +21,7 @@ export function getSubscriptionKeyboard(language, channelUrl) {
  * Основная клавиатура для главного экрана
  */
 export function getMainKeyboard(language) {
-    const miniAppUrl =  'https://lending-hetzer-bot.vercel.app';
+    const miniAppUrl =  'https://hertzbet.com/en';
     
     return Markup.inlineKeyboard([
         [{
@@ -30,7 +30,7 @@ export function getMainKeyboard(language) {
         }],
         [Markup.button.url(
             t('main.button_play_web', language),
-            process.env.WEBSITE_URL || 'https://lending-hetzer-bot.vercel.app'
+            process.env.WEBSITE_URL || 'https://hertzbet.com/en'
         )],
         [Markup.button.switchToChat(
             t('main.button_share', language),
@@ -68,10 +68,10 @@ export function getAdminKeyboard(language) {
             '📢 Уведомления',
             'admin_notifications'
         )],
-        // [Markup.button.callback(
-        //     t('admin.button_promolinks', language),
-        //     'admin_promolinks'
-        // )],
+        [Markup.button.callback(
+            t('admin.button_promolinks', language),
+            'admin_promolinks'
+        )],
         [Markup.button.callback(
             t('admin.button_export', language),
             'admin_export'
@@ -159,8 +159,29 @@ export function getSettingsKeyboard(language) {
             'settings_toggle_phone'
         )],
         [Markup.button.callback(
+            '👋 Welcome Settings',
+            'settings_welcome_menu'
+        )],
+        [Markup.button.callback(
             t('admin.button_back', language),
             'admin_back'
+        )]
+    ]);
+}
+
+export function getWelcomeSettingsKeyboard(language) {
+    return Markup.inlineKeyboard([
+        [Markup.button.callback(
+            '📝 Изменить текст',
+            'settings_welcome_text'
+        )],
+        [Markup.button.callback(
+            '🖼️ Изменить картинку',
+            'settings_welcome_image'
+        )],
+        [Markup.button.callback(
+            '◀️ Назад',
+            'admin_settings'
         )]
     ]);
 }

@@ -8,8 +8,9 @@ export class Database {
         this.broadcastsCollection = db.collection('broadcasts');
         this.notificationsCollection = db.collection('notifications');
         this.statsCollection = db.collection('statistics');
-        // this.promoLinksCollection = db.collection('promo_links');
+        this.promoLinksCollection = db.collection('promo_links');
         this.buttonStatsCollection = db.collection('button_stats');
+        this.promoClicksCollection = db.collection('promo_clicks');
     }
 
     // ========== USERS ==========
@@ -48,7 +49,7 @@ export class Database {
                 last_activity: admin.firestore.FieldValue.serverTimestamp(),
                 onboarding_completed: false,
                 onboarding_step: 'language_selection',
-                // promo_source: userData.promo_source || null,
+                promo_source: userData.promo_source || null,
             });
             console.log(`✅ User ${userId} created successfully`);
             return true;
@@ -228,15 +229,153 @@ export class Database {
         }
     }
 
-    /* Promo links temporarily disabled
     // ========== PROMO LINKS ==========
 
-    async createPromoLink({ slug, description, admin_id }) { ... }
-    async getPromoLinks() { ... }
-    async incrementPromoLinkUsage(slug) { ... }
-    async getPromoLink(slug) { ... }
-    async deletePromoLink(slug) { ... }
-    */
+    async createPromoLink({ slug, description, admin_id }) {
+        try {
+            const docRef = this.promoLinksCollection.doc(slug);
+            const existing = await docRef.get();
+
+            if (existing.exists) {
+                console.log(`⚠️ Promo link ${slug} already exists`);
+                return { success: false, error: 'slug_exists' };
+            }
+
+            await docRef.set({
+                slug,
+                description,
+                created_by: admin_id,
+                total_clicks: 0,
+                created_at: admin.firestore.FieldValue.serverTimestamp(),
+                updated_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            console.log(`✅ Promo link ${slug} created by admin ${admin_id}`);
+            return { success: true };
+        } catch (error) {
+            console.error('❌ Error creating promo link:', error);
+            return { success: false, error: 'unknown' };
+        }
+    }
+
+    async getPromoLinks() {
+        try {
+            const snapshot = await this.promoLinksCollection
+                .orderBy('created_at', 'desc')
+                .get();
+
+            if (snapshot.empty) {
+                return [];
+            }
+
+            return snapshot.docs.map(doc => doc.data());
+        } catch (error) {
+            console.error('❌ Error getting promo links:', error);
+            return [];
+        }
+    }
+
+    async incrementPromoLinkUsage(slug, userId) {
+        try {
+            if (!slug || !userId) {
+                return false;
+            }
+
+            const docRef = this.promoLinksCollection.doc(slug);
+            const doc = await docRef.get();
+
+            if (!doc.exists) {
+                console.log(`⚠️ Promo link ${slug} not found`);
+                return false;
+            }
+
+            // Проверяем, кликал ли уже этот пользователь
+            const clickId = `${slug}_${userId}`;
+            const clickRef = this.promoClicksCollection.doc(clickId);
+            const clickDoc = await clickRef.get();
+
+            if (clickDoc.exists) {
+                console.log(`ℹ️ User ${userId} already clicked promo link ${slug}`);
+                return false;
+            }
+
+            // Сохраняем клик пользователя
+            await clickRef.set({
+                slug,
+                user_id: userId,
+                clicked_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            // Инкрементируем счетчик только для уникального клика
+            await docRef.update({
+                total_clicks: admin.firestore.FieldValue.increment(1),
+                updated_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            console.log(`✅ Unique click for promo ${slug} from user ${userId}`);
+            return true;
+        } catch (error) {
+            console.error('❌ Error incrementing promo link usage:', error);
+            return false;
+        }
+    }
+
+    async getPromoLink(slug) {
+        try {
+            if (!slug) {
+                return null;
+            }
+
+            const doc = await this.promoLinksCollection.doc(slug).get();
+            return doc.exists ? doc.data() : null;
+        } catch (error) {
+            console.error('❌ Error getting promo link:', error);
+            return null;
+        }
+    }
+
+    async hasUserClickedPromo(slug, userId) {
+        try {
+            const clickId = `${slug}_${userId}`;
+            const clickDoc = await this.promoClicksCollection.doc(clickId).get();
+            return clickDoc.exists;
+        } catch (error) {
+            console.error('❌ Error checking promo click:', error);
+            return false;
+        }
+    }
+
+    async getPromoLinkClicks(slug) {
+        try {
+            const snapshot = await this.promoClicksCollection
+                .where('slug', '==', slug)
+                .get();
+            
+            return snapshot.docs.map(doc => doc.data());
+        } catch (error) {
+            console.error('❌ Error getting promo link clicks:', error);
+            return [];
+        }
+    }
+
+    async deletePromoLink(slug) {
+        try {
+            const docRef = this.promoLinksCollection.doc(slug);
+            const doc = await docRef.get();
+
+            if (!doc.exists) {
+                console.log(`⚠️ Promo link ${slug} not found`);
+                return { success: false, error: 'not_found' };
+            }
+
+            await docRef.delete();
+            console.log(`✅ Promo link ${slug} deleted`);
+            return { success: true };
+        } catch (error) {
+            console.error('❌ Error deleting promo link:', error);
+            return { success: false, error: 'unknown' };
+        }
+    }
 
     // ========== SETTINGS ==========
 

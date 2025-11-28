@@ -1,6 +1,6 @@
 import { database } from '../../config/services/database.js';
 import { t } from '../../locales/i18n.js';
-import { getSettingsKeyboard } from '../../utils/keyboards.js';
+import { getSettingsKeyboard, getWelcomeSettingsKeyboard } from '../../utils/keyboards.js';
 import { adminMiddleware } from './index.js';
 
 /**
@@ -323,6 +323,229 @@ async function restartNotificationScheduler() {
 }
 
 /**
+ * Обработчик меню Welcome настроек
+ */
+export async function handleWelcomeMenu(ctx) {
+    const userId = ctx.from.id;
+    const lang = await getUserLanguage(userId);
+
+    await ctx.answerCbQuery();
+
+    console.log(`👋 User ${userId} opened welcome settings menu`);
+
+    try {
+        const settings = await database.getBotSettings();
+        const currentTextDe = settings.welcome_text?.de || 'не установлено';
+        const currentTextEn = settings.welcome_text?.en || 'не установлено';
+        const currentImageUrl = settings.welcome_image_url || 'не установлено';
+
+        const message = 
+            `👋 НАСТРОЙКИ ПРИВЕТСТВИЯ\n\n` +
+            `📝 Текст:\n` +
+            `🇩🇪 DE: ${currentTextDe.substring(0, 50)}${currentTextDe.length > 50 ? '...' : ''}\n` +
+            `🇬🇧 EN: ${currentTextEn.substring(0, 50)}${currentTextEn.length > 50 ? '...' : ''}\n\n` +
+            `🖼️ Картинка:\n${currentImageUrl}`;
+
+        await ctx.editMessageText(
+            message,
+            getWelcomeSettingsKeyboard(lang)
+        );
+
+    } catch (error) {
+        console.error('❌ Error loading welcome settings:', error);
+        await ctx.reply(t('errors.general', lang));
+    }
+}
+
+/**
+ * Обработчик изменения welcome текста
+ */
+export async function handleWelcomeText(ctx) {
+    const userId = ctx.from.id;
+    const lang = await getUserLanguage(userId);
+
+    await ctx.answerCbQuery();
+
+    console.log(`📝 User ${userId} changing welcome text`);
+
+    try {
+        const settings = await database.getBotSettings();
+        const currentTextDe = settings.welcome_text?.de || '';
+        const currentTextEn = settings.welcome_text?.en || '';
+
+        await ctx.reply(
+            `📝 Изменение приветственного текста\n\n` +
+            `🇩🇪 Текущий текст (DE):\n${currentTextDe}\n\n` +
+            `🇬🇧 Текущий текст (EN):\n${currentTextEn}\n\n` +
+            `Отправьте новый текст в формате:\n` +
+            `DE: текст на немецком\n` +
+            `EN: текст на английском\n\n` +
+            `Или /cancel для отмены`
+        );
+
+        await database.updateUser(userId, {
+            awaiting_input: 'welcome_text'
+        });
+
+    } catch (error) {
+        console.error('❌ Error changing welcome text:', error);
+        await ctx.reply(t('errors.general', lang));
+    }
+}
+
+/**
+ * Обработчик ввода welcome текста
+ */
+export async function handleWelcomeTextInput(ctx, inputText) {
+    const userId = ctx.from.id;
+    const lang = await getUserLanguage(userId);
+
+    try {
+        if (inputText.toLowerCase() === '/cancel') {
+            await database.updateUser(userId, { awaiting_input: null });
+            await ctx.reply('❌ Отменено');
+            return;
+        }
+
+        const lines = inputText.trim().split('\n');
+        let textDe = '';
+        let textEn = '';
+
+        for (const line of lines) {
+            if (line.trim().startsWith('DE:')) {
+                textDe = line.replace(/^DE:\s*/i, '').trim();
+            } else if (line.trim().startsWith('EN:')) {
+                textEn = line.replace(/^EN:\s*/i, '').trim();
+            } else if (textDe && !textEn) {
+                textDe += '\n' + line;
+            } else if (textEn) {
+                textEn += '\n' + line;
+            }
+        }
+
+        if (!textDe || !textEn) {
+            await ctx.reply('❌ Неверный формат. Укажите тексты для обоих языков:\nDE: текст\nEN: текст');
+            return;
+        }
+
+        await database.updateSettings({
+            welcome_text: {
+                de: textDe.trim(),
+                en: textEn.trim()
+            }
+        });
+
+        await database.updateUser(userId, { awaiting_input: null });
+
+        await ctx.reply('✅ Welcome текст обновлен!');
+
+        console.log(`✅ Welcome text updated by ${userId}`);
+
+        // Возвращаемся в меню welcome настроек
+        const settings = await database.getBotSettings();
+        const currentTextDe = settings.welcome_text?.de || 'не установлено';
+        const currentTextEn = settings.welcome_text?.en || 'не установлено';
+        const currentImageUrl = settings.welcome_image_url || 'не установлено';
+
+        const message = 
+            `👋 НАСТРОЙКИ ПРИВЕТСТВИЯ\n\n` +
+            `📝 Текст:\n` +
+            `🇩🇪 DE: ${currentTextDe.substring(0, 50)}${currentTextDe.length > 50 ? '...' : ''}\n` +
+            `🇬🇧 EN: ${currentTextEn.substring(0, 50)}${currentTextEn.length > 50 ? '...' : ''}\n\n` +
+            `🖼️ Картинка:\n${currentImageUrl}`;
+
+        await ctx.reply(message, getWelcomeSettingsKeyboard(lang));
+
+    } catch (error) {
+        console.error('❌ Error processing welcome text input:', error);
+        await ctx.reply('❌ Ошибка при обновлении текста. Попробуйте еще раз.');
+    }
+}
+
+/**
+ * Обработчик изменения welcome картинки
+ */
+export async function handleWelcomeImage(ctx) {
+    const userId = ctx.from.id;
+    const lang = await getUserLanguage(userId);
+
+    await ctx.answerCbQuery();
+
+    console.log(`🖼️ User ${userId} changing welcome image`);
+
+    try {
+        const settings = await database.getBotSettings();
+        const currentImageUrl = settings.welcome_image_url || 'не установлено';
+
+        await ctx.reply(
+            `🖼️ Изменение приветственной картинки\n\n` +
+            `Текущая картинка: ${currentImageUrl}\n\n` +
+            `Отправьте новый URL картинки или /cancel для отмены`
+        );
+
+        await database.updateUser(userId, {
+            awaiting_input: 'welcome_image'
+        });
+
+    } catch (error) {
+        console.error('❌ Error changing welcome image:', error);
+        await ctx.reply(t('errors.general', lang));
+    }
+}
+
+/**
+ * Обработчик ввода URL welcome картинки
+ */
+export async function handleWelcomeImageInput(ctx, inputText) {
+    const userId = ctx.from.id;
+    const lang = await getUserLanguage(userId);
+
+    try {
+        if (inputText.toLowerCase() === '/cancel') {
+            await database.updateUser(userId, { awaiting_input: null });
+            await ctx.reply('❌ Отменено');
+            return;
+        }
+
+        const imageUrl = inputText.trim();
+
+        if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+            await ctx.reply('❌ Неверный URL. Он должен начинаться с http:// или https://');
+            return;
+        }
+
+        await database.updateSettings({
+            welcome_image_url: imageUrl
+        });
+
+        await database.updateUser(userId, { awaiting_input: null });
+
+        await ctx.reply('✅ Welcome картинка обновлена!');
+
+        console.log(`✅ Welcome image updated by ${userId}`);
+
+        // Возвращаемся в меню welcome настроек
+        const settings = await database.getBotSettings();
+        const currentTextDe = settings.welcome_text?.de || 'не установлено';
+        const currentTextEn = settings.welcome_text?.en || 'не установлено';
+        const currentImageUrl = settings.welcome_image_url || 'не установлено';
+
+        const message = 
+            `👋 НАСТРОЙКИ ПРИВЕТСТВИЯ\n\n` +
+            `📝 Текст:\n` +
+            `🇩🇪 DE: ${currentTextDe.substring(0, 50)}${currentTextDe.length > 50 ? '...' : ''}\n` +
+            `🇬🇧 EN: ${currentTextEn.substring(0, 50)}${currentTextEn.length > 50 ? '...' : ''}\n\n` +
+            `🖼️ Картинка:\n${currentImageUrl}`;
+
+        await ctx.reply(message, getWelcomeSettingsKeyboard(lang));
+
+    } catch (error) {
+        console.error('❌ Error processing welcome image input:', error);
+        await ctx.reply('❌ Ошибка при обновлении картинки. Попробуйте еще раз.');
+    }
+}
+
+/**
  * Регистрация обработчиков настроек
  */
 export function registerSettingsHandlers(bot) {
@@ -330,6 +553,9 @@ export function registerSettingsHandlers(bot) {
     bot.action('settings_toggle_phone', adminMiddleware, handleTogglePhone);
     bot.action('settings_interval', adminMiddleware, handleNotificationInterval);
     bot.action('settings_interval_minutes', adminMiddleware, handleNotificationIntervalMinutes);
+    bot.action('settings_welcome_menu', adminMiddleware, handleWelcomeMenu);
+    bot.action('settings_welcome_text', adminMiddleware, handleWelcomeText);
+    bot.action('settings_welcome_image', adminMiddleware, handleWelcomeImage);
 
     console.log('✅ Settings handlers registered');
 }
