@@ -17,7 +17,7 @@ import { database } from '../config/services/database.js';
  * проверка подписки будет отключена
  */
 const TEST_CHANNEL_ID = process.env.TEST_CHANNEL_ID || '';
-const TEST_CHANNEL_INVITE_LINK = process.env.TEST_CHANNEL_LINK || 'https://t.me/+_HejstC1rlsxZmMy';
+const TEST_CHANNEL_INVITE_LINK = process.env.TEST_CHANNEL_LINK || 'https://t.me/+2TCLIWncY0U1MDMy';
 const SUBSCRIPTION_CHECK_ENABLED = process.env.SUBSCRIPTION_CHECK_ENABLED !== 'false';
 
 /**

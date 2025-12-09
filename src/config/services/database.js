@@ -410,8 +410,6 @@ export class Database {
                     quiet_hours_end: 8,
                     max_per_day: 12
                 },
-                channel_id: '@hertzbet_channel',
-                channel_username: 'hertzbet_channel',
                 welcome_image_url: 'https://example.com/welcome.jpg',
                 welcome_text: {
                     de: '🎰 Willkommen bei Hertzbet!\n\n✨ Tausende von Spielen\n💰 Willkommensbonus\n🎁 Cashback & Free Spins\n⚡️ Schnelle Auszahlungen\n🏆 VIP-Programm\n💬 24/7 Support',
