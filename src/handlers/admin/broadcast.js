@@ -485,13 +485,19 @@ async function showBroadcastPreview(ctx, userId, lang) {
     // Кнопки для подтверждения
     const keyboard = Markup.inlineKeyboard([
         [Markup.button.callback(
-            t('admin.broadcast.button_send', lang),
-            'broadcast_confirm'
+            t('admin.broadcast.button_test', lang),
+            'broadcast_test'
         )],
-        [Markup.button.callback(
-            t('admin.broadcast.button_cancel', lang),
-            'broadcast_cancel'
-        )]
+        [
+            Markup.button.callback(
+                t('admin.broadcast.button_send', lang),
+                'broadcast_confirm'
+            ),
+            Markup.button.callback(
+                t('admin.broadcast.button_cancel', lang),
+                'broadcast_cancel'
+            )
+        ]
     ]);
 
     // Отправляем предпросмотр с медиа
@@ -514,6 +520,76 @@ async function showBroadcastPreview(ctx, userId, lang) {
         }
     } else {
         await ctx.reply(previewText, keyboard);
+    }
+}
+
+/**
+ * Тестовая отправка рассылки администратору
+ */
+export async function handleTestBroadcast(ctx) {
+    const userId = ctx.from.id;
+    const lang = await getUserLanguage(userId);
+    const state = broadcastStates.get(userId);
+
+    if (!state) {
+        await ctx.answerCbQuery('❌ Session expired');
+        return;
+    }
+
+    await ctx.answerCbQuery(t('admin.broadcast.test_sending', lang));
+
+    console.log(`🧪 User ${userId} testing broadcast`);
+
+    try {
+        // Формируем кнопки
+        const buttons = state.buttons || [];
+        let sendOptions = {};
+        
+        if (buttons.length > 0) {
+            const buttonRows = [];
+            for (const btn of buttons) {
+                buttonRows.push([Markup.button.url(btn.text, btn.url)]);
+            }
+            sendOptions = Markup.inlineKeyboard(buttonRows);
+        }
+
+        // Отправляем тестовое сообщение администратору
+        const testText = `🧪 ${t('admin.broadcast.test_label', lang)}\n\n${state.text}`;
+
+        if (state.media) {
+            if (state.mediaType === 'photo') {
+                await ctx.telegram.sendPhoto(userId, state.media, {
+                    caption: testText,
+                    ...sendOptions
+                });
+            } else if (state.mediaType === 'video') {
+                await ctx.telegram.sendVideo(userId, state.media, {
+                    caption: testText,
+                    ...sendOptions
+                });
+            } else if (state.mediaType === 'animation') {
+                await ctx.telegram.sendAnimation(userId, state.media, {
+                    caption: testText,
+                    ...sendOptions
+                });
+            }
+        } else {
+            await ctx.telegram.sendMessage(userId, testText, sendOptions);
+        }
+
+        await ctx.answerCbQuery(
+            t('admin.broadcast.test_sent', lang),
+            { show_alert: true }
+        );
+
+        console.log(`✅ Test broadcast sent to admin ${userId}`);
+
+    } catch (error) {
+        console.error('❌ Error sending test broadcast:', error);
+        await ctx.answerCbQuery(
+            t('admin.broadcast.test_failed', lang),
+            { show_alert: true }
+        );
     }
 }
 
@@ -888,7 +964,8 @@ export function registerBroadcastHandlers(bot) {
     bot.action('broadcast_send_now', adminMiddleware, handleSendNow);
     bot.action('broadcast_schedule', adminMiddleware, handleSchedule);
 
-    // Подтверждение и отмена
+    // Тестовая отправка, подтверждение и отмена
+    bot.action('broadcast_test', adminMiddleware, handleTestBroadcast);
     bot.action('broadcast_confirm', adminMiddleware, handleBroadcastConfirm);
     bot.action('broadcast_cancel', adminMiddleware, handleBroadcastCancel);
 

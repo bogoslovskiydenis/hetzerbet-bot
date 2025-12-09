@@ -74,7 +74,12 @@
       "target_count": "Zielgruppe: {count} Benutzer",
       "buttons_count": "Schaltflächen: {count}",
       "confirm": "✅ Broadcast an {count} Benutzer senden?",
+      "button_test": "🧪 Test senden",
       "button_send": "✅ Senden",
+      "test_label": "TESTNACHRICHT",
+      "test_sending": "Test wird gesendet...",
+      "test_sent": "✅ Testnachricht an Sie gesendet!",
+      "test_failed": "❌ Testnachricht konnte nicht gesendet werden."
       "button_cancel": "❌ Abbrechen",
       "button_cancel_hint": "Geben Sie /cancel ein, um abzubrechen",
       "sending": "📤 Broadcast wird gesendet...\n\nFortschritt: {sent}/{total}",

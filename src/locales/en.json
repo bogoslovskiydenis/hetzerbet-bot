@@ -99,7 +99,12 @@
       "preview": "👁️ PREVIEW:\n\n{text}",
       "target_count": "Target audience: {count} users",
       "buttons_count": "Buttons: {count}",
-      "button_send": "✅ Send"
+      "button_test": "🧪 Test Send",
+      "button_send": "✅ Send",
+      "test_label": "TEST MESSAGE",
+      "test_sending": "Sending test...",
+      "test_sent": "✅ Test message sent to you!",
+      "test_failed": "❌ Failed to send test message."
     },
     "export": {
       "title": "💾 EXPORT DATA",
