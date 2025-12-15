@@ -210,6 +210,40 @@ export async function handleBroadcastMedia(ctx) {
 }
 
 /**
+ * Обработка медиа, переданного ссылкой на картинку (URL)
+ */
+export async function handleBroadcastMediaUrl(ctx, urlText) {
+    const userId = ctx.from.id;
+    const lang = await getUserLanguage(userId);
+    const state = broadcastStates.get(userId);
+
+    if (!state || !broadcastStates.isAwaitingMedia(userId)) {
+        return;
+    }
+
+    const text = (urlText || '').trim();
+
+    // Простая проверка, что это URL
+    const isUrl = /^https?:\/\/\S+$/i.test(text);
+
+    if (!isUrl) {
+        await ctx.reply('❌ ' + t('admin.broadcast.invalid_media', lang));
+        return;
+    }
+
+    // Сохраняем URL как photo (Telegram принимает URL вместо file_id)
+    broadcastStates.update(userId, {
+        media: text,
+        mediaType: 'photo',
+        step: 'buttons'
+    });
+
+    console.log(`🖼️ User ${userId} added media URL`);
+
+    await requestButtons(ctx, userId, lang);
+}
+
+/**
  * Пропуск медиа
  */
 export async function handleSkipMedia(ctx) {

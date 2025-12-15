@@ -1,6 +1,7 @@
+import { Markup } from 'telegraf';
 import { database } from '../../config/services/database.js';
 import { t } from '../../locales/i18n.js';
-import { getSettingsKeyboard, getWelcomeSettingsKeyboard } from '../../utils/keyboards.js';
+import { getSettingsKeyboard, getWelcomeSettingsKeyboard, getIntervalSettingsKeyboard } from '../../utils/keyboards.js';
 import { adminMiddleware } from './index.js';
 
 /**
@@ -127,6 +128,56 @@ export async function handleTogglePhone(ctx) {
 }
 
 /**
+ * Обработчик меню настроек интервала
+ */
+export async function handleIntervalMenu(ctx) {
+    const userId = ctx.from.id;
+    const lang = await getUserLanguage(userId);
+
+    console.log(`⏰ User ${userId} opened interval settings menu`);
+
+    try {
+        const settings = await database.getBotSettings();
+        const intervalMinutes = settings.notification_interval_minutes || 120;
+        const intervalHours = Math.floor(intervalMinutes / 60);
+        const remainingMinutes = intervalMinutes % 60;
+
+        let intervalText = '';
+        if (intervalHours > 0 && remainingMinutes > 0) {
+            intervalText = `${intervalHours}ч ${remainingMinutes}м`;
+        } else if (intervalHours > 0) {
+            intervalText = `${intervalHours}ч`;
+        } else {
+            intervalText = `${intervalMinutes}м`;
+        }
+
+        const message =
+            `⏰ НАСТРОЙКИ ИНТЕРВАЛА УВЕДОМЛЕНИЙ\n\n` +
+            `Текущий интервал: ${intervalText}\n\n` +
+            `Выберите способ изменения интервала:`;
+
+        // Если пришёл callback от кнопки — редактируем то сообщение.
+        // Если вызвано из текстового сообщения — отправляем новое.
+        if (ctx.callbackQuery) {
+            await ctx.answerCbQuery();
+            await ctx.editMessageText(
+                message,
+                getIntervalSettingsKeyboard(lang)
+            );
+        } else {
+            await ctx.reply(
+                message,
+                getIntervalSettingsKeyboard(lang)
+            );
+        }
+
+    } catch (error) {
+        console.error('❌ Error loading interval settings:', error);
+        await ctx.reply(t('errors.general', lang));
+    }
+}
+
+/**
  * Обработчик изменения интервала уведомлений (в часах)
  */
 export async function handleNotificationInterval(ctx) {
@@ -142,11 +193,14 @@ export async function handleNotificationInterval(ctx) {
         const settings = await database.getBotSettings();
         const currentInterval = settings.notification_interval_hours || 2;
 
-        // Отправляем сообщение с инструкцией
+        // Отправляем сообщение с инструкцией и кнопкой отмены
         await ctx.reply(
             t('admin.settings.set_interval', lang) + '\n\n' +
-            `Текущий интервал: ${currentInterval} часов\n` +
-            t('admin.settings.interval_instructions', lang)
+            `Текущий интервал: ${currentInterval} часов\n\n` +
+            t('admin.settings.interval_instructions', lang),
+            Markup.inlineKeyboard([
+                [Markup.button.callback('❌ Отмена', 'settings_interval_cancel')]
+            ])
         );
 
         // Устанавливаем состояние ожидания ввода интервала
@@ -176,11 +230,14 @@ export async function handleNotificationIntervalMinutes(ctx) {
         const settings = await database.getBotSettings();
         const currentIntervalMinutes = settings.notification_interval_minutes || 120;
 
-        // Отправляем сообщение с инструкцией
+        // Отправляем сообщение с инструкцией и кнопкой отмены
         await ctx.reply(
             t('admin.settings.set_interval_minutes', lang) + '\n\n' +
-            `Текущий интервал: ${currentIntervalMinutes} минут\n` +
-            t('admin.settings.interval_minutes_instructions', lang)
+            `Текущий интервал: ${currentIntervalMinutes} минут\n\n` +
+            t('admin.settings.interval_minutes_instructions', lang),
+            Markup.inlineKeyboard([
+                [Markup.button.callback('❌ Отмена', 'settings_interval_cancel')]
+            ])
         );
 
         // Устанавливаем состояние ожидания ввода интервала в минутах
@@ -202,10 +259,11 @@ export async function handleNotificationIntervalInput(ctx, inputText) {
     const lang = await getUserLanguage(userId);
 
     try {
-        // Проверяем на отмену
+        // Проверяем на отмену (обратная совместимость с /cancel)
         if (inputText.toLowerCase() === '/cancel') {
             await database.updateUser(userId, { awaiting_input: null });
-            await ctx.reply(t('admin.settings.interval_cancelled', lang));
+            await ctx.reply('❌ Изменение интервала отменено.');
+            await handleIntervalMenu(ctx);
             return;
         }
 
@@ -237,6 +295,9 @@ export async function handleNotificationIntervalInput(ctx, inputText) {
         // Перезапускаем планировщик уведомлений
         await restartNotificationScheduler();
 
+        // Возвращаемся в меню настроек интервала
+        await handleIntervalMenu(ctx);
+
     } catch (error) {
         console.error('❌ Error processing interval input:', error);
         await ctx.reply('❌ Ошибка при обновлении интервала. Попробуйте еще раз.');
@@ -251,10 +312,11 @@ export async function handleNotificationIntervalMinutesInput(ctx, inputText) {
     const lang = await getUserLanguage(userId);
 
     try {
-        // Проверяем на отмену
+        // Проверяем на отмену (обратная совместимость с /cancel)
         if (inputText.toLowerCase() === '/cancel') {
             await database.updateUser(userId, { awaiting_input: null });
-            await ctx.reply(t('admin.settings.interval_cancelled', lang));
+            await ctx.reply('❌ Изменение интервала отменено.');
+            await handleIntervalMenu(ctx);
             return;
         }
 
@@ -286,6 +348,9 @@ export async function handleNotificationIntervalMinutesInput(ctx, inputText) {
 
         // Перезапускаем планировщик уведомлений
         await restartNotificationScheduler();
+
+        // Возвращаемся в меню настроек интервала
+        await handleIntervalMenu(ctx);
 
     } catch (error) {
         console.error('❌ Error processing interval minutes input:', error);
@@ -379,8 +444,10 @@ export async function handleWelcomeText(ctx) {
             `🇬🇧 Текущий текст (EN):\n${currentTextEn}\n\n` +
             `Отправьте новый текст в формате:\n` +
             `DE: текст на немецком\n` +
-            `EN: текст на английском\n\n` +
-            `Или /cancel для отмены`
+            `EN: текст на английском`,
+            Markup.inlineKeyboard([
+                [Markup.button.callback('❌ Отмена', 'settings_welcome_cancel')]
+            ])
         );
 
         await database.updateUser(userId, {
@@ -401,9 +468,11 @@ export async function handleWelcomeTextInput(ctx, inputText) {
     const lang = await getUserLanguage(userId);
 
     try {
+        // Проверяем на отмену (обратная совместимость с /cancel)
         if (inputText.toLowerCase() === '/cancel') {
             await database.updateUser(userId, { awaiting_input: null });
-            await ctx.reply('❌ Отменено');
+            await ctx.reply('❌ Изменение отменено.');
+            await handleWelcomeMenu(ctx);
             return;
         }
 
@@ -480,7 +549,10 @@ export async function handleWelcomeImage(ctx) {
         await ctx.reply(
             `🖼️ Изменение приветственной картинки\n\n` +
             `Текущая картинка: ${currentImageUrl}\n\n` +
-            `Отправьте новый URL картинки или /cancel для отмены`
+            `Отправьте новый URL картинки:`,
+            Markup.inlineKeyboard([
+                [Markup.button.callback('❌ Отмена', 'settings_welcome_cancel')]
+            ])
         );
 
         await database.updateUser(userId, {
@@ -501,9 +573,11 @@ export async function handleWelcomeImageInput(ctx, inputText) {
     const lang = await getUserLanguage(userId);
 
     try {
+        // Проверяем на отмену (обратная совместимость с /cancel)
         if (inputText.toLowerCase() === '/cancel') {
             await database.updateUser(userId, { awaiting_input: null });
-            await ctx.reply('❌ Отменено');
+            await ctx.reply('❌ Изменение отменено.');
+            await handleWelcomeMenu(ctx);
             return;
         }
 
@@ -546,16 +620,55 @@ export async function handleWelcomeImageInput(ctx, inputText) {
 }
 
 /**
+ * Обработчик отмены изменения интервала
+ */
+export async function handleIntervalCancel(ctx) {
+    const userId = ctx.from.id;
+    const lang = await getUserLanguage(userId);
+
+    await ctx.answerCbQuery();
+
+    // Очищаем состояние
+    await database.updateUser(userId, { awaiting_input: null });
+
+    await ctx.reply('❌ Изменение интервала отменено.');
+
+    // Возвращаемся в меню настроек интервала
+    await handleIntervalMenu(ctx);
+}
+
+/**
+ * Обработчик отмены изменения welcome настроек
+ */
+export async function handleWelcomeCancel(ctx) {
+    const userId = ctx.from.id;
+    const lang = await getUserLanguage(userId);
+
+    await ctx.answerCbQuery();
+
+    // Очищаем состояние
+    await database.updateUser(userId, { awaiting_input: null });
+
+    await ctx.reply('❌ Изменение отменено.');
+
+    // Возвращаемся в меню welcome настроек
+    await handleWelcomeMenu(ctx);
+}
+
+/**
  * Регистрация обработчиков настроек
  */
 export function registerSettingsHandlers(bot) {
     bot.action('admin_settings', adminMiddleware, handleSettings);
     bot.action('settings_toggle_phone', adminMiddleware, handleTogglePhone);
-    bot.action('settings_interval', adminMiddleware, handleNotificationInterval);
+    bot.action('settings_interval', adminMiddleware, handleIntervalMenu);
+    bot.action('settings_interval_hours', adminMiddleware, handleNotificationInterval);
     bot.action('settings_interval_minutes', adminMiddleware, handleNotificationIntervalMinutes);
+    bot.action('settings_interval_cancel', adminMiddleware, handleIntervalCancel);
     bot.action('settings_welcome_menu', adminMiddleware, handleWelcomeMenu);
     bot.action('settings_welcome_text', adminMiddleware, handleWelcomeText);
     bot.action('settings_welcome_image', adminMiddleware, handleWelcomeImage);
+    bot.action('settings_welcome_cancel', adminMiddleware, handleWelcomeCancel);
 
     console.log('✅ Settings handlers registered');
 }

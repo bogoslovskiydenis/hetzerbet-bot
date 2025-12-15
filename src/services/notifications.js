@@ -36,32 +36,30 @@ async function getRandomPromo(language) {
  */
 async function canSendNotification(user, settings) {
     // Проверка 1: Включены ли уведомления у пользователя
-    // if (!user.notifications_enabled) {
-    //     return false;
-    // }
-    //
-    // // Проверка 2: Тихие часы (quiet hours) - ОТКЛЮЧЕНО ДЛЯ ТЕСТА
-    // if (settings.notification_schedule?.enabled) {
-    //     const now = new Date();
-    //     const currentHour = now.getHours();
-    //     const quietStart = settings.notification_schedule.quiet_hours_start || 23;
-    //     const quietEnd = settings.notification_schedule.quiet_hours_end || 8;
+    if (!user.notifications_enabled) {
+        return false;
+    }
 
-    //     if (quietStart > quietEnd) {
-    //         if (currentHour >= quietStart || currentHour < quietEnd) {
-    //             console.log(`🔇 User ${user.user_id} in quiet hours`);
-    //             return false;
-    //         }
-    //     } else {
-    //         if (currentHour >= quietStart && currentHour < quietEnd) {
-    //             console.log(`🔇 User ${user.user_id} in quiet hours`);
-    //             return false;
-    //         }
-    //     }
-    // }
+    // Проверка 2: Тихие часы (quiet hours) — 22:00–08:00
+    {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const quietStart = 22;
+        const quietEnd = 8;
 
-    // Проверка 3: Лимит уведомлений в день - УВЕЛИЧЕН ДЛЯ ТЕСТА
-    const maxPerDay = 100; // Было: 12
+        if (quietStart > quietEnd) {
+            if (currentHour >= quietStart || currentHour < quietEnd) {
+                console.log(`🔇 User ${user.user_id} in quiet hours`);
+                return false;
+            }
+        } else if (currentHour >= quietStart && currentHour < quietEnd) {
+            console.log(`🔇 User ${user.user_id} in quiet hours`);
+            return false;
+        }
+    }
+
+    // Проверка 3: Лимит уведомлений в день
+    const maxPerDay = 4;
     const todayCount = await database.getTodayNotificationCount(user.user_id);
 
     if (todayCount >= maxPerDay) {

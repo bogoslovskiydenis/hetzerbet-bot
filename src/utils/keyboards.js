@@ -147,12 +147,8 @@ export function getExportKeyboard(language) {
 export function getSettingsKeyboard(language) {
     return Markup.inlineKeyboard([
         [Markup.button.callback(
-            t('admin.settings.notification_interval', language),
+            '⏰ Настройки интервала',
             'settings_interval'
-        )],
-        [Markup.button.callback(
-            t('admin.settings.notification_interval_minutes', language),
-            'settings_interval_minutes'
         )],
         [Markup.button.callback(
             t('admin.settings.button_toggle_phone', language),
@@ -181,6 +177,26 @@ export function getWelcomeSettingsKeyboard(language) {
         )],
         [Markup.button.callback(
             '◀️ Назад',
+            'admin_settings'
+        )]
+    ]);
+}
+
+/**
+ * Клавиатура для настроек интервала уведомлений
+ */
+export function getIntervalSettingsKeyboard(language) {
+    return Markup.inlineKeyboard([
+        [Markup.button.callback(
+            t('admin.settings.notification_interval', language),
+            'settings_interval_hours'
+        )],
+        [Markup.button.callback(
+            t('admin.settings.notification_interval_minutes', language),
+            'settings_interval_minutes'
+        )],
+        [Markup.button.callback(
+            t('admin.button_back', language),
             'admin_settings'
         )]
     ]);

@@ -16,7 +16,8 @@ import {
     registerBroadcastHandlers,
     handleBroadcastText,
     handleBroadcastButtons,
-    handleDateTimeInput
+    handleDateTimeInput,
+    handleBroadcastMediaUrl
 } from './src/handlers/admin/broadcast.js';
 import { registerExportHandlers } from './src/handlers/admin/export.js';
 import { registerSettingsHandlers, handleNotificationIntervalInput, handleNotificationIntervalMinutesInput, handleWelcomeTextInput, handleWelcomeImageInput } from './src/handlers/admin/settings.js';
@@ -373,6 +374,12 @@ bot.on('text', async (ctx) => {
 
     // Если админ в процессе создания рассылки
     if (isAdmin && broadcastStates.isActive(userId)) {
+        // Если админ на шаге загрузки медиа для рассылки и прислал ссылку на картинку
+        if (broadcastStates.isAwaitingMedia(userId)) {
+            await handleBroadcastMediaUrl(ctx, text);
+            return;
+        }
+
         // Проверка на команду отмены
         if (text === '/cancel') {
             await handleBroadcastText(ctx);

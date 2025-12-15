@@ -60,8 +60,10 @@ export async function handleCreateNotification(ctx) {
     await ctx.reply(
         '➕ СОЗДАНИЕ УВЕДОМЛЕНИЯ\n\n' +
         'Введите название уведомления:\n\n' +
-        'Пример: "Welcome Bonus Promo"\n\n' +
-        'Для отмены введите /cancel'
+        'Пример: "Welcome Bonus Promo"',
+        Markup.inlineKeyboard([
+            [Markup.button.callback('❌ Отмена', 'notification_cancel')]
+        ])
     );
 
     // Устанавливаем состояние ожидания
@@ -266,9 +268,10 @@ export async function handleEditNotificationTextEn(ctx) {
         await ctx.reply(
             `🇬🇧 РЕДАКТИРОВАНИЕ АНГЛИЙСКОГО ТЕКСТА\n\n` +
             `Текущий текст:\n${template.text_en}\n\n` +
-            `Введите новый текст на английском языке:\n\n` +
-            `Для отмены введите /cancel`,
-            { reply_markup: { remove_keyboard: true } }
+            `Введите новый текст на английском языке:`,
+            Markup.inlineKeyboard([
+                [Markup.button.callback('❌ Отмена', 'notification_cancel_edit')]
+            ])
         );
 
         // Сохраняем ID шаблона для редактирования
@@ -303,9 +306,10 @@ export async function handleEditNotificationTextDe(ctx) {
         await ctx.reply(
             `🇩🇪 РЕДАКТИРОВАНИЕ НЕМЕЦКОГО ТЕКСТА\n\n` +
             `Текущий текст:\n${template.text_de}\n\n` +
-            `Введите новый текст на немецком языке:\n\n` +
-            `Для отмены введите /cancel`,
-            { reply_markup: { remove_keyboard: true } }
+            `Введите новый текст на немецком языке:`,
+            Markup.inlineKeyboard([
+                [Markup.button.callback('❌ Отмена', 'notification_cancel_edit')]
+            ])
         );
 
         // Сохраняем ID шаблона для редактирования
@@ -340,9 +344,10 @@ export async function handleEditNotificationImage(ctx) {
         await ctx.reply(
             `🖼️ РЕДАКТИРОВАНИЕ ИЗОБРАЖЕНИЯ\n\n` +
             `Текущее изображение: ${template.image_url || 'Нет'}\n\n` +
-            `Введите новый URL изображения или 'skip' для удаления:\n\n` +
-            `Для отмены введите /cancel`,
-            { reply_markup: { remove_keyboard: true } }
+            `Введите новый URL изображения или 'skip' для удаления:`,
+            Markup.inlineKeyboard([
+                [Markup.button.callback('❌ Отмена', 'notification_cancel_edit')]
+            ])
         );
 
         // Сохраняем ID шаблона для редактирования
@@ -388,9 +393,10 @@ export async function handleEditNotificationButtons(ctx) {
             `Текст | URL\n` +
             `Текст | URL\n\n` +
             `Или введите 'skip' для удаления всех кнопок\n` +
-            `Максимум 8 кнопок\n\n` +
-            `Для отмены введите /cancel`,
-            { reply_markup: { remove_keyboard: true } }
+            `Максимум 8 кнопок`,
+            Markup.inlineKeyboard([
+                [Markup.button.callback('❌ Отмена', 'notification_cancel_edit')]
+            ])
         );
 
         // Сохраняем ID шаблона для редактирования
@@ -509,6 +515,60 @@ export async function handleConfirmDeleteNotification(ctx) {
 }
 
 /**
+ * Обработчик отмены создания уведомления
+ */
+export async function handleNotificationCancel(ctx) {
+    const userId = ctx.from.id;
+    const lang = await getUserLanguage(userId);
+
+    await ctx.answerCbQuery();
+
+    // Очищаем состояние
+    await database.updateUser(userId, {
+        awaiting_input: null,
+        temp_notification_name: null,
+        temp_notification_text_en: null,
+        temp_notification_text_de: null,
+        temp_notification_image: null
+    });
+
+    await ctx.reply('❌ Создание уведомления отменено.');
+    
+    // Возвращаемся в меню уведомлений
+    await handleNotifications(ctx);
+}
+
+/**
+ * Обработчик отмены редактирования уведомления
+ */
+export async function handleNotificationCancelEdit(ctx) {
+    const userId = ctx.from.id;
+    const lang = await getUserLanguage(userId);
+
+    await ctx.answerCbQuery();
+
+    const user = await database.getUser(userId);
+    const templateId = user.temp_edit_template_id;
+
+    // Очищаем состояние
+    await database.updateUser(userId, {
+        awaiting_input: null,
+        temp_edit_template_id: null
+    });
+
+    await ctx.reply('❌ Редактирование отменено.');
+
+    // Возвращаемся к просмотру уведомления, если есть templateId
+    if (templateId) {
+        ctx.match = [null, templateId];
+        await handleViewNotificationDetails(ctx);
+    } else {
+        // Иначе возвращаемся к списку
+        await handleNotificationList(ctx);
+    }
+}
+
+/**
  * Обработчик ввода данных для уведомлений
  */
 export async function handleNotificationInput(ctx, inputText) {
@@ -568,8 +628,10 @@ async function handleNotificationNameInput(ctx, name) {
         'Пример:\n' +
         '🎰 Play and win big at Hertzbet!\n\n' +
         '💰 Get up to 500€ welcome bonus!\n' +
-        '🎁 Free spins waiting for you!\n\n' +
-        'Для отмены введите /cancel'
+        '🎁 Free spins waiting for you!',
+        Markup.inlineKeyboard([
+            [Markup.button.callback('❌ Отмена', 'notification_cancel')]
+        ])
     );
 }
 
@@ -603,8 +665,10 @@ async function handleNotificationTextInput(ctx, text, language) {
             'Пример:\n' +
             '🎰 Spielen und groß gewinnen bei Hertzbet!\n\n' +
             '💰 Bis zu 500€ Willkommensbonus!\n' +
-            '🎁 Freispiele warten auf Sie!\n\n' +
-            'Для отмены введите /cancel'
+            '🎁 Freispiele warten auf Sie!',
+            Markup.inlineKeyboard([
+                [Markup.button.callback('❌ Отмена', 'notification_cancel')]
+            ])
         );
     } else {
         // Запрашиваем изображение
@@ -614,8 +678,10 @@ async function handleNotificationTextInput(ctx, text, language) {
 
         await ctx.reply(
             '🖼️ Введите URL изображения (или "пропустить"):\n\n' +
-            'Пример: https://example.com/image.jpg\n\n' +
-            'Для отмены введите /cancel'
+            'Пример: https://example.com/image.jpg',
+            Markup.inlineKeyboard([
+                [Markup.button.callback('❌ Отмена', 'notification_cancel')]
+            ])
         );
     }
 }
@@ -644,8 +710,10 @@ async function handleNotificationImageInput(ctx, imageUrl) {
         'Формат: Текст кнопки | URL\n' +
         'Пример:\n' +
         '🎰 Играть | https://hertzbet.com\n' +
-        '🎁 Бонус | https://hertzbet.com/bonus\n\n' +
-        'Для отмены введите /cancel'
+        '🎁 Бонус | https://hertzbet.com/bonus',
+        Markup.inlineKeyboard([
+            [Markup.button.callback('❌ Отмена', 'notification_cancel')]
+        ])
     );
 }
 
@@ -960,6 +1028,10 @@ export function registerNotificationHandlers(bot) {
     bot.action('notification_create', adminMiddleware, handleCreateNotification);
     bot.action('notification_list', adminMiddleware, handleNotificationList);
     bot.action('notification_test', adminMiddleware, handleTestNotification);
+    
+    // Отмена создания/редактирования
+    bot.action('notification_cancel', adminMiddleware, handleNotificationCancel);
+    bot.action('notification_cancel_edit', adminMiddleware, handleNotificationCancelEdit);
     
     // Просмотр деталей уведомления
     bot.action(/notification_view_(.+)/, adminMiddleware, handleViewNotificationDetails);
