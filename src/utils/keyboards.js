@@ -159,6 +159,10 @@ export function getSettingsKeyboard(language) {
             'settings_welcome_menu'
         )],
         [Markup.button.callback(
+            '⏱️ Отложенные сообщения',
+            'delayed_messages_menu'
+        )],
+        [Markup.button.callback(
             t('admin.button_back', language),
             'admin_back'
         )]

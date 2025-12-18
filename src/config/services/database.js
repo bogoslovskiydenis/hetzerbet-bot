@@ -7,6 +7,7 @@ export class Database {
         this.settingsCollection = db.collection('settings');
         this.broadcastsCollection = db.collection('broadcasts');
         this.notificationsCollection = db.collection('notifications');
+        this.delayedMessagesCollection = db.collection('delayed_messages');
         this.statsCollection = db.collection('statistics');
         this.promoLinksCollection = db.collection('promo_links');
         this.buttonStatsCollection = db.collection('button_stats');
@@ -414,6 +415,16 @@ export class Database {
                 welcome_text: {
                     de: '🎰 Willkommen bei Hertzbet!\n\n✨ Tausende von Spielen\n💰 Willkommensbonus\n🎁 Cashback & Free Spins\n⚡️ Schnelle Auszahlungen\n🏆 VIP-Programm\n💬 24/7 Support',
                     en: '🎰 Welcome to Hertzbet!\n\n✨ Thousands of games\n💰 Welcome bonus\n🎁 Cashback & Free Spins\n⚡️ Fast withdrawals\n🏆 VIP Program\n💬 24/7 Support'
+                },
+                delayed_message: {
+                    enabled: false,
+                    delay_minutes: 15,
+                    text: {
+                        de: '',
+                        en: ''
+                    },
+                    image_url: '',
+                    buttons: []
                 },
                 admin_ids: [5230934145],
                 created_at: admin.firestore.FieldValue.serverTimestamp(),
@@ -986,6 +997,137 @@ export class Database {
             };
         } catch (error) {
             console.error('❌ Error getting random notification template:', error);
+            return null;
+        }
+    }
+
+    // ========== DELAYED MESSAGES ==========
+
+    /**
+     * Создать отложенное сообщение
+     */
+    async createDelayedMessage(messageData) {
+        try {
+            const messageRef = await this.delayedMessagesCollection.add({
+                name: messageData.name,
+                text_de: messageData.text_de,
+                text_en: messageData.text_en,
+                image_url: messageData.image_url || null,
+                buttons: messageData.buttons || [],
+                is_active: messageData.is_active !== false,
+                created_by: messageData.admin_id,
+                created_at: admin.firestore.FieldValue.serverTimestamp(),
+                updated_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            console.log(`✅ Delayed message ${messageRef.id} created`);
+            return messageRef.id;
+        } catch (error) {
+            console.error('❌ Error creating delayed message:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Получить все отложенные сообщения
+     */
+    async getDelayedMessages() {
+        try {
+            const snapshot = await this.delayedMessagesCollection
+                .where('is_active', '==', true)
+                .get();
+
+            const messages = [];
+            snapshot.forEach(doc => {
+                messages.push({ id: doc.id, ...doc.data() });
+            });
+
+            messages.sort((a, b) => {
+                const aTime = a.created_at?.toMillis?.() || a.created_at || 0;
+                const bTime = b.created_at?.toMillis?.() || b.created_at || 0;
+                return bTime - aTime;
+            });
+
+            console.log(`✅ Retrieved ${messages.length} delayed messages`);
+            return messages;
+        } catch (error) {
+            console.error('❌ Error getting delayed messages:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Получить отложенное сообщение по ID
+     */
+    async getDelayedMessage(messageId) {
+        try {
+            const doc = await this.delayedMessagesCollection.doc(messageId).get();
+            if (doc.exists) {
+                return { id: doc.id, ...doc.data() };
+            }
+            return null;
+        } catch (error) {
+            console.error('❌ Error getting delayed message:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Обновить отложенное сообщение
+     */
+    async updateDelayedMessage(messageId, updates) {
+        try {
+            await this.delayedMessagesCollection.doc(messageId).update({
+                ...updates,
+                updated_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            console.log(`✅ Delayed message ${messageId} updated`);
+            return true;
+        } catch (error) {
+            console.error('❌ Error updating delayed message:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Удалить отложенное сообщение
+     */
+    async deleteDelayedMessage(messageId) {
+        try {
+            await this.delayedMessagesCollection.doc(messageId).update({
+                is_active: false,
+                deleted_at: admin.firestore.FieldValue.serverTimestamp()
+            });
+            console.log(`✅ Delayed message ${messageId} deleted`);
+            return true;
+        } catch (error) {
+            console.error('❌ Error deleting delayed message:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Получить случайное активное отложенное сообщение
+     */
+    async getRandomDelayedMessage(language = 'en') {
+        try {
+            const messages = await this.getDelayedMessages();
+            
+            if (messages.length === 0) {
+                console.log('⚠️ No active delayed messages found');
+                return null;
+            }
+
+            const randomIndex = Math.floor(Math.random() * messages.length);
+            const message = messages[randomIndex];
+
+            return {
+                text: message[`text_${language}`] || message.text_en,
+                image_url: message.image_url,
+                buttons: message.buttons || []
+            };
+        } catch (error) {
+            console.error('❌ Error getting random delayed message:', error);
             return null;
         }
     }

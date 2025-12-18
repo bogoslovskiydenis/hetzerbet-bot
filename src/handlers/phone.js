@@ -2,6 +2,7 @@ import { Markup } from 'telegraf';
 import { database } from '../config/services/database.js';
 import { t } from '../locales/i18n.js';
 import { sendWelcomeMessageWithImage } from '../utils/welcome.js';
+import { scheduleDelayedMessage } from '../services/delayedMessage.js';
 
 /**
  * Получить язык пользователя
@@ -29,8 +30,7 @@ export async function requestPhoneNumber(ctx, language) {
 
     // Клавиатура с кнопкой "Поделиться номером"
     const phoneKeyboard = Markup.keyboard([
-        [Markup.button.contactRequest(t('phone.button_share', language))],
-        [Markup.button.text(t('phone.button_skip', language))]
+        [Markup.button.contactRequest(t('phone.button_share', language))]
     ])
         .resize()
         .oneTime();
@@ -82,6 +82,12 @@ export async function handlePhoneContact(ctx) {
 
     // Отправляем приветственное сообщение
     await sendWelcomeMessageWithImage(ctx, lang);
+
+    // Планируем отложенное сообщение
+    const bot = global.bot;
+    if (bot) {
+        scheduleDelayedMessage(bot, userId, lang);
+    }
 }
 
 /**
@@ -115,6 +121,12 @@ export async function handlePhoneSkip(ctx) {
 
     // Отправляем приветственное сообщение
     await sendWelcomeMessageWithImage(ctx, lang);
+
+    // Планируем отложенное сообщение
+    const bot = global.bot;
+    if (bot) {
+        scheduleDelayedMessage(bot, userId, lang);
+    }
 
     return true;
 }

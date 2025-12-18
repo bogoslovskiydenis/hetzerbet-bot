@@ -655,6 +655,7 @@ export async function handleWelcomeCancel(ctx) {
     await handleWelcomeMenu(ctx);
 }
 
+
 /**
  * Регистрация обработчиков настроек
  */

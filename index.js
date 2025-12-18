@@ -8,6 +8,7 @@ import {
     getLanguageKeyboard
 } from './src/utils/keyboards.js';
 import { sendWelcomeMessageWithImage } from './src/utils/welcome.js';
+import { scheduleDelayedMessage } from './src/services/delayedMessage.js';
 
 // Импорт обработчиков
 import { registerAdminHandlers } from './src/handlers/admin/index.js';
@@ -21,6 +22,7 @@ import {
 } from './src/handlers/admin/broadcast.js';
 import { registerExportHandlers } from './src/handlers/admin/export.js';
 import { registerSettingsHandlers, handleNotificationIntervalInput, handleNotificationIntervalMinutesInput, handleWelcomeTextInput, handleWelcomeImageInput } from './src/handlers/admin/settings.js';
+import { registerDelayedMessageHandlers, handleDelayedMessageInput } from './src/handlers/admin/delayedMessages.js';
 import { registerNotificationHandlers, handleNotificationInput } from './src/handlers/admin/notifications.js';
 import { registerPromoLinksHandlers, handlePromoLinkInput } from './src/handlers/admin/promoLinks.js';
 import {
@@ -59,12 +61,16 @@ async function getUserLanguage(userId) {
 
 // Вспомогательная функция для отправки приветственного сообщения (с обновлением onboarding)
 async function sendWelcomeMessage(ctx, language) {
-    await database.updateUser(ctx.from.id, {
+    const userId = ctx.from.id;
+    await database.updateUser(userId, {
         onboarding_step: 'completed',
         onboarding_completed: true
     });
 
     await sendWelcomeMessageWithImage(ctx, language);
+    
+    // Планируем отложенное сообщение
+    scheduleDelayedMessage(bot, userId, language);
 }
 
 // ========== TELEGRAM BOT ==========
@@ -187,6 +193,8 @@ bot.action(/language_(de|en)/, async (ctx) => {
     } else {
         console.log(`⭐️ Phone request is disabled, showing welcome message`);
         await sendWelcomeMessage(ctx, language);
+        // Планируем отложенное сообщение
+        scheduleDelayedMessage(bot, userId, language);
     }
 });
 
@@ -305,6 +313,7 @@ registerBroadcastHandlers(bot);
 registerNotificationHandlers(bot);
 registerExportHandlers(bot);
 registerSettingsHandlers(bot);
+registerDelayedMessageHandlers(bot);
 registerPromoLinksHandlers(bot);
 
 // ========== ОБРАБОТКА КОНТАКТОВ И ТЕКСТА ==========
@@ -362,6 +371,12 @@ bot.on('text', async (ctx) => {
         // Если админ ожидает ввод welcome картинки
         if (user?.awaiting_input === 'welcome_image') {
             await handleWelcomeImageInput(ctx, text);
+            return;
+        }
+
+        // Если админ ожидает ввод данных для отложенных сообщений
+        if (user?.awaiting_input?.startsWith('delayed_message_')) {
+            await handleDelayedMessageInput(ctx, text);
             return;
         }
         
