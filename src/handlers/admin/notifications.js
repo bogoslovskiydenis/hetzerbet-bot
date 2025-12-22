@@ -427,7 +427,7 @@ export async function handleViewNotificationDetails(ctx) {
             return;
         }
 
-        const preview = formatNotificationPreview(template, lang);
+        const preview = await formatNotificationPreview(template, lang);
         
         await ctx.reply(
             `📋 **${template.name}**\n\n${preview}`,
@@ -1002,7 +1002,7 @@ async function handleEditButtonsInput(ctx, inputText) {
 /**
  * Форматирование превью уведомления
  */
-function formatNotificationPreview(template, language) {
+async function formatNotificationPreview(template, language) {
     const text = language === 'de' ? template.text_de : template.text_en;
     let preview = `📝 **Текст:**\n${text}`;
     
@@ -1017,8 +1017,43 @@ function formatNotificationPreview(template, language) {
         });
     }
     
-    preview += `\n\n📅 **Создано:** ${new Date(template.created_at).toLocaleString()}`;
-    preview += `\n👤 **Автор:** ${template.admin_id}`;
+    // Дата создания
+    let dateStr = 'Не указано';
+    if (template.created_at) {
+        try {
+            const createdDate = template.created_at.toDate ? template.created_at.toDate() : new Date(template.created_at);
+            if (createdDate instanceof Date && !isNaN(createdDate.getTime())) {
+                dateStr = createdDate.toLocaleString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+        } catch (error) {
+            console.error('❌ Error formatting notification date:', error);
+        }
+    }
+    preview += `\n\n📅 **Создано:** ${dateStr}`;
+    
+    // Автор
+    let authorStr = 'Не указано';
+    const authorId = template.created_by || template.admin_id;
+    if (authorId) {
+        try {
+            const author = await database.getUser(authorId);
+            if (author) {
+                authorStr = author.first_name || author.username || `ID: ${authorId}`;
+            } else {
+                authorStr = `ID: ${authorId}`;
+            }
+        } catch (error) {
+            console.error('❌ Error getting notification author:', error);
+            authorStr = `ID: ${authorId}`;
+        }
+    }
+    preview += `\n👤 **Автор:** ${authorStr}`;
     
     return preview;
 }

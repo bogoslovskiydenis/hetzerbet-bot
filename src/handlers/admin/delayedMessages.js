@@ -154,7 +154,7 @@ export async function handleViewDelayedMessageDetails(ctx) {
             return;
         }
 
-        const preview = formatDelayedMessagePreview(message, lang);
+        const preview = await formatDelayedMessagePreview(message, lang);
         
         await ctx.reply(
             `📋 **${message.name}**\n\n${preview}`,
@@ -582,7 +582,7 @@ export async function handleDelayedMessageCancelEdit(ctx) {
 /**
  * Форматирование превью отложенного сообщения
  */
-function formatDelayedMessagePreview(message, language) {
+async function formatDelayedMessagePreview(message, language) {
     const text = language === 'de' ? message.text_de : message.text_en;
     let preview = `📝 **Текст:**\n${text || 'Нет текста'}`;
     
@@ -597,9 +597,42 @@ function formatDelayedMessagePreview(message, language) {
         });
     }
     
-    const createdDate = message.created_at?.toDate?.() || message.created_at;
-    preview += `\n\n📅 **Создано:** ${createdDate ? new Date(createdDate).toLocaleString() : 'Invalid Date'}`;
-    preview += `\n👤 **Автор:** ${message.created_by || 'undefined'}`;
+    // Форматирование даты создания
+    let dateStr = 'Не указано';
+    if (message.created_at) {
+        try {
+            const createdDate = message.created_at.toDate ? message.created_at.toDate() : new Date(message.created_at);
+            if (createdDate instanceof Date && !isNaN(createdDate.getTime())) {
+                dateStr = createdDate.toLocaleString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+        } catch (error) {
+            console.error('❌ Error formatting date:', error);
+        }
+    }
+    preview += `\n\n📅 **Создано:** ${dateStr}`;
+    
+    // Получение информации об авторе
+    let authorStr = 'Не указано';
+    if (message.created_by) {
+        try {
+            const author = await database.getUser(message.created_by);
+            if (author) {
+                authorStr = author.first_name || author.username || `ID: ${message.created_by}`;
+            } else {
+                authorStr = `ID: ${message.created_by}`;
+            }
+        } catch (error) {
+            console.error('❌ Error getting author:', error);
+            authorStr = `ID: ${message.created_by}`;
+        }
+    }
+    preview += `\n👤 **Автор:** ${authorStr}`;
     
     return preview;
 }
@@ -1082,3 +1115,4 @@ export function registerDelayedMessageHandlers(bot) {
 
     console.log('✅ Delayed message handlers registered');
 }
+
